@@ -1,6 +1,11 @@
 # mero_tv
+Setup environment information
 
-A new Flutter project.
+    Flutter version: 3.41.5
+    Dart version: 3.11.3
+    DevTools version: 2.54.2
+    Android SDK version 36.1.0
+
 
 ## Golden Tests
 
