@@ -1,5 +1,6 @@
 import 'package:mero_tv/models/channel_model.dart';
 import 'package:mero_tv/models/logo_model.dart';
+import 'package:mero_tv/models/stream_model.dart';
 import 'package:mero_tv/repository/channel_repository_base.dart';
 import 'package:mero_tv/services/api_service.dart';
 
@@ -20,6 +21,15 @@ class ChannelRepository implements ChannelRepositoryBase{
     try{
       return await _apiService.getLogos();
     }catch(e){
+      throw Exception(e.toString());
+    }
+  }
+
+  @override
+  Future<List<StreamModel>> getStreams() async {
+    try {
+      return await _apiService.getStreams();
+    } catch (e) {
       throw Exception(e.toString());
     }
   }
