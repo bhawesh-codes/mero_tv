@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:media_kit/media_kit.dart';
 import 'package:mero_tv/app/app.bottomsheets.dart';
 import 'package:mero_tv/app/app.dialogs.dart';
 import 'package:mero_tv/app/app.locator.dart';
@@ -8,6 +9,7 @@ import 'package:stacked_services/stacked_services.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  MediaKit.ensureInitialized();
   await setupLocator();
   setupDialogUi();
   setupBottomSheetUi();
