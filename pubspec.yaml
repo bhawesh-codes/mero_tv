@@ -12,6 +12,9 @@ dependencies:
     sdk: flutter
   flutter_screenutil: ^5.9.3
   json_annotation: ^4.11.0
+  media_kit: ^1.2.6
+  media_kit_libs_video: ^1.0.7
+  media_kit_video: ^2.0.1
   retrofit: ^4.9.2
   stacked: ^3.4.0
   stacked_services: ^1.1.0
