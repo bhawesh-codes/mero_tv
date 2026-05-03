@@ -41,7 +41,7 @@ class LogoModel {
             : List<String>.from(json["tags"]!.map((x) => x)),
         width: json["width"],
         height: json["height"],
-        format: formatValues.map[json["format"]]!,
+        format: null,
         url: json["url"],
       );
 
