@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mero_tv/ui/common/ui_helpers.dart';
+import 'package:mero_tv/ui/views/video_player/video_player_view.dart';
 import 'package:stacked/stacked.dart';
 
 import 'home_viewmodel.dart';
@@ -63,36 +64,60 @@ class HomeView extends StackedView<HomeViewModel> {
                           childAspectRatio: 0.7),
                       itemCount: viewModel.channelList!.length,
                       itemBuilder: (context, index) {
-                        return SizedBox(
-                            height: 60.h,
-                            width: 50.w,
-                            child: Card(
-                              shape: Border.all(),
-                              elevation: 4,
-                              color: Colors.black87,
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.center,
-                                children: [
-                                  verticalSpaceSmall,
-                                  CircleAvatar(
-                                    
-                                    radius: 35.r,
-                                  ),
-                                  verticalSpaceMedium,
-                                  Padding(
-                                    padding:
-                                        const EdgeInsets.fromLTRB(6, 0, 6, 0),
-                                    child: Text(
-                                      viewModel.channelList![index].name!,
-                                      overflow: TextOverflow.fade,
-                                      maxLines: 2,
-                                      style:
-                                          const TextStyle(color: Colors.white),
+                        final logo = viewModel.logo;
+                        final url = (logo != null && index < logo.length)
+                            ? logo[index].url
+                            : null;
+                        return GestureDetector(
+                          // Wrap your card with GestureDetector
+                          onTap: () {
+                            final url = viewModel.channelList![index].url;
+                            final title = viewModel.channelList![index].title ??
+                                'Live TV';
+                            if (url != null) {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      VideoPlayerView(streamUrl: url, title: title),
+                                ),
+                              );
+                            }
+                          },
+
+                          child: SizedBox(
+                              height: 60.h,
+                              width: 50.w,
+                              child: Card(
+                                shape: Border.all(),
+                                elevation: 4,
+                                color: Colors.black87,
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.center,
+                                  children: [
+                                    verticalSpaceSmall,
+                                    CircleAvatar(
+                                      backgroundImage: url != null
+                                          ? NetworkImage(url)
+                                          : null,
+                                      radius: 35.r,
                                     ),
-                                  ),
-                                ],
-                              ),
-                            ));
+                                    verticalSpaceMedium,
+                                    Padding(
+                                      padding:
+                                          const EdgeInsets.fromLTRB(6, 0, 6, 0),
+                                      child: Text(
+                                        viewModel.channelList![index].title!,
+                                        overflow: TextOverflow.fade,
+                                        maxLines: 2,
+                                        style: const TextStyle(
+                                            color: Colors.white),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )),
+                        );
                       }),
                 )
               ],
