@@ -27,9 +27,9 @@ Map<String, dynamic> _$LogoModelToJson(LogoModel instance) => <String, dynamic>{
     };
 
 const _$FormatEnumMap = {
-  Format.gif: 'gif',
-  Format.jpeg: 'jpeg',
-  Format.png: 'png',
-  Format.svg: 'svg',
-  Format.webP: 'webP',
+  Format.gif: 'GIF',
+  Format.jpeg: 'JPEG',
+  Format.png: 'PNG',
+  Format.svg: 'SVG',
+  Format.webP: 'WebP',
 };
