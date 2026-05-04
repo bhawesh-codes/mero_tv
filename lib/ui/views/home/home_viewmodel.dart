@@ -11,6 +11,7 @@ class HomeViewModel extends BaseViewModel {
   HomeViewModel();
 
   bool isLoading = false;
+  bool isSearching = false;
   String? errorMessage;
   List<StreamModel>? _channelList;
   List<StreamModel>? get channelList => _channelList;
@@ -22,33 +23,44 @@ Map<String, String?> _logoUrlMap = {};
 Map<String, String?> get logoUrlMap => _logoUrlMap;
 
 Future<void> fetchChannelData() async {
-  isLoading = true;
-  errorMessage = null;
-  notifyListeners();
+    isLoading = true;
+    errorMessage = null;
+    notifyListeners();
 
-  try {
-    _channelList = await _repository.getStreams();
-    print('channels loaded: ${_channelList?.length}');
-  } catch (e) {
-    _channelList = null;
-    errorMessage = "Failed to load channel list: ${e.toString()}";
+    try {
+      final allStreams = await _repository.getStreams();
+      // only keep streams with non-null channel
+      _channelList = allStreams.where((s) => s.channel != null).toList();
+      print('streams with channel: ${_channelList?.length}');
+    } catch (e) {
+      _channelList = null;
+      errorMessage = "Failed to load channel list: ${e.toString()}";
+    }
+
+    try {
+      final allLogos = await _repository.getLogos();
+      // build logo map: channel id -> url
+      final logoMap = {
+        for (final logo in allLogos)
+          if (logo.channel != null) logo.channel!: logo.url
+      };
+
+      // for each stream, store its logo url if exists, else null
+      _logoUrlMap = {
+        for (final s in _channelList ?? [])
+          s.channel!: logoMap[s.channel] // null if no matching logo
+      };
+
+      print('logo map built: ${_logoUrlMap.length}');
+    } catch (e) {
+      errorMessage ??= "Failed to load logo: ${e.toString()}";
+    }
+
+    isLoading = false;
+    notifyListeners();
   }
-
-  try {
-    _logo = await _repository.getLogos();
-    print('logos loaded: ${_logo?.length}');
-    
-    // Build the map after logos are loaded
-    _logoUrlMap = {
-      for (final logo in _logo ?? [])
-        if (logo.channel != null) logo.channel!: logo.url
-    };
-  } catch (e) {
-    _logo = null;
-    errorMessage ??= "Failed to load logo: ${e.toString()}";
+  toggleSearch(){
+    isSearching = !isSearching;
+    notifyListeners();
   }
-
-  isLoading = false;
-  notifyListeners();
-}
 }
