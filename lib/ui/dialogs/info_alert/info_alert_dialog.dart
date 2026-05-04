@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mero_tv/ui/common/app_colors.dart';
+
 import 'package:mero_tv/ui/common/ui_helpers.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
@@ -52,7 +52,6 @@ class InfoAlertDialog extends StackedView<InfoAlertDialogModel> {
                         request.description!,
                         style: const TextStyle(
                           fontSize: 14,
-                          color: kcMediumGrey,
                         ),
                         maxLines: 3,
                         softWrap: true,
