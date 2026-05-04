@@ -83,7 +83,7 @@ class _ApiService implements ApiService {
     final queryParameters = <String, dynamic>{};
     final _headers = <String, dynamic>{};
     const Map<String, dynamic>? _data = null;
-    final _options = _setStreamType<List<LogoModel>>(
+    final _options = _setStreamType<List<StreamModel>>(
       Options(method: 'GET', headers: _headers, extra: _extra)
           .compose(
             _dio.options,
