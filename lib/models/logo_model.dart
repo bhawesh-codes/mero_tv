@@ -33,27 +33,9 @@ class LogoModel {
     this.url,
   });
 
-  factory LogoModel.fromJson(Map<String, dynamic> json) => LogoModel(
-        channel: json["channel"],
-        feed: json["feed"],
-        tags: json["tags"] == null
-            ? []
-            : List<String>.from(json["tags"]!.map((x) => x)),
-        width: json["width"],
-        height: json["height"],
-        format: null,
-        url: json["url"],
-      );
+  factory LogoModel.fromJson(Map<String, dynamic> json) => _$LogoModelFromJson(json);
 
-  Map<String, dynamic> toJson() => {
-        "channel": channel,
-        "feed": feed,
-        "tags": tags == null ? [] : List<dynamic>.from(tags!.map((x) => x)),
-        "width": width,
-        "height": height,
-        "format": formatValues.reverse[format],
-        "url": url,
-      };
+  Map<String, dynamic> toJson() => _$LogoModelToJson(this);
 }
 
 enum Format { gif, jpeg, png, svg, webP }
