@@ -14,6 +14,7 @@ class HomeView extends StackedView<HomeViewModel> {
 
   @override
   Widget builder(BuildContext context, HomeViewModel viewModel, Widget? child) {
+    
     return Scaffold(
         bottomNavigationBar: const BottomNavBar(),
         appBar: AppBar(
@@ -22,9 +23,32 @@ class HomeView extends StackedView<HomeViewModel> {
           title: viewModel.isSearching
               ? SizedBox(
                   height: 40.h,
-                  child: const SearchBar(
-                    backgroundColor: WidgetStatePropertyAll(kcSurfaceColor),
-                    hintText: 'Search channels..',
+                  child: TextField(
+                    controller: viewModel.searchController,
+                    autofocus: true,
+                    onChanged: viewModel.onSearchChanged,
+                    style: const TextStyle(color: Colors.white),
+                    decoration: InputDecoration(
+                      hintText: 'Search channels..',
+                      hintStyle: const TextStyle(color: kcSecondaryTextColor),
+                      filled: true,
+                      fillColor: kcSurfaceColor,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8.r),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: EdgeInsets.symmetric(horizontal: 12.w),
+                      prefixIcon:
+                          const Icon(Icons.search, color: kcSecondaryTextColor),
+                      suffixIcon: IconButton(
+                        icon: const Icon(Icons.close,
+                            color: kcSecondaryTextColor),
+                        onPressed: () {
+                          
+                          viewModel.toggleSearch();
+                        },
+                      ),
+                    ),
                   ),
                 )
               : RichText(
@@ -41,14 +65,10 @@ class HomeView extends StackedView<HomeViewModel> {
                           color: kcPrimaryColor))
                 ])),
           actions: [
-            IconButton(
-                onPressed: () {
-                  viewModel.toggleSearch();
-                },
-                icon: const Icon(
-                  Icons.search,
-                  color: Colors.white,
-                ))
+            if (!viewModel.isSearching)
+              IconButton(
+                  onPressed: viewModel.toggleSearch,
+                  icon: const Icon(Icons.search, color: Colors.white))
           ],
         ),
         backgroundColor: kcBackgroundColor,
