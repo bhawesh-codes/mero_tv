@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/adapters.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:mero_tv/app/app.bottomsheets.dart';
 import 'package:mero_tv/app/app.dialogs.dart';
 import 'package:mero_tv/app/app.locator.dart';
 import 'package:mero_tv/app/app.router.dart';
+import 'package:mero_tv/models/stream_model.dart';
+import 'package:mero_tv/services/get_it_service.dart';
 import 'package:stacked_services/stacked_services.dart';
 
 Future<void> main() async {
@@ -13,6 +17,10 @@ Future<void> main() async {
   await setupLocator();
   setupDialogUi();
   setupBottomSheetUi();
+  await configureDependencies();
+  await Hive.initFlutter();
+  Hive.registerAdapter(StreamModelAdapter());
+  await Hive.openBox<StreamModel>('favorites');
   runApp(const MainApp());
 }
 
