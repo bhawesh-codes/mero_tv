@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mero_tv/ui/common/app_colors.dart';
 import 'package:mero_tv/ui/common/ui_helpers.dart';
 import 'package:mero_tv/ui/views/video_player/video_player_view.dart';
-import 'package:mero_tv/ui/widgets/bottom_nav_bar.dart';
 import 'package:stacked/stacked.dart';
 
 import 'home_viewmodel.dart';
@@ -14,9 +13,7 @@ class HomeView extends StackedView<HomeViewModel> {
 
   @override
   Widget builder(BuildContext context, HomeViewModel viewModel, Widget? child) {
-    
     return Scaffold(
-        bottomNavigationBar: const BottomNavBar(),
         appBar: AppBar(
           elevation: 5,
           backgroundColor: kcBackgroundColor,
@@ -44,7 +41,6 @@ class HomeView extends StackedView<HomeViewModel> {
                         icon: const Icon(Icons.close,
                             color: kcSecondaryTextColor),
                         onPressed: () {
-                          
                           viewModel.toggleSearch();
                         },
                       ),
@@ -76,7 +72,9 @@ class HomeView extends StackedView<HomeViewModel> {
           child: Builder(builder: (context) {
             if (viewModel.isLoading) {
               return const Center(
-                child: CircularProgressIndicator(),
+                child: CircularProgressIndicator(
+                  color: kcPrimaryColor,
+                ),
               );
             }
             if (viewModel.errorMessage != null &&
@@ -390,12 +388,19 @@ class HomeView extends StackedView<HomeViewModel> {
                                     ],
                                   ),
                                 ),
+                                // replace the existing IconButton with this
                                 IconButton(
-                                    onPressed: () {},
-                                    icon: const Icon(
-                                      Icons.favorite_border,
-                                      color: kcSecondaryTextColor,
-                                    ))
+                                  onPressed: () =>
+                                      viewModel.toggleFavorite(channel),
+                                  icon: Icon(
+                                    viewModel.isFavorite(channel)
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                    color: viewModel.isFavorite(channel)
+                                        ? kcPrimaryColor
+                                        : kcSecondaryTextColor,
+                                  ),
+                                )
                               ],
                             ),
                           )),
