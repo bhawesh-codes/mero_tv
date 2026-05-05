@@ -2,6 +2,7 @@ import 'package:mero_tv/ui/bottom_sheets/notice/notice_sheet.dart';
 import 'package:mero_tv/ui/dialogs/info_alert/info_alert_dialog.dart';
 import 'package:mero_tv/ui/views/main_view/main_view.dart';
 import 'package:mero_tv/ui/views/startup/startup_view.dart';
+import 'package:mero_tv/ui/views/video_player/video_player_view.dart';
 import 'package:stacked/stacked_annotations.dart';
 import 'package:stacked_services/stacked_services.dart';
 // @stacked-import
@@ -10,6 +11,7 @@ import 'package:stacked_services/stacked_services.dart';
   routes: [
     MaterialRoute(page: MainView),
     MaterialRoute(page: StartupView),
+    MaterialRoute(page: VideoPlayerView)
     // @stacked-route
   ],
   dependencies: [
