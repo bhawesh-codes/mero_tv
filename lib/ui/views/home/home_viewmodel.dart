@@ -1,7 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:mero_tv/app/app.locator.dart';
 import 'package:mero_tv/app/app.router.dart';
-import 'package:mero_tv/models/logo_model.dart';
 import 'package:mero_tv/models/stream_model.dart';
 import 'package:mero_tv/repository/channel_repository.dart';
 import 'package:mero_tv/ui/views/favorites/services/favorites_service.dart';
@@ -60,32 +59,49 @@ class HomeViewModel extends BaseViewModel {
     errorMessage = null;
     notifyListeners();
 
-    try {
-      final allStreams = await _repository.getStreams();
-      _channelList = allStreams.where((s) => s.channel != null).toList();
-    } catch (e) {
-      _channelList = null;
-      errorMessage = "Failed to load channel list: ${e.toString()}";
+    // getStreams returns Either<Failure, List<StreamModel>>
+    final streamsResult = await _repository.getStreams();
+
+    streamsResult.fold(
+      (failure) {
+        // Left — failure
+        _channelList = null;
+        errorMessage = failure.message;
+      },
+      (streams) {
+        // Right — success
+        _channelList = streams.where((s) => s.channel != null).toList();
+      },
+    );
+
+    // only load logos if streams succeeded
+    if (_channelList != null) {
+      final logosResult = await _repository.getLogos();
+
+      logosResult.fold(
+        (failure) {
+          // logos failing is non-fatal — just log it
+          debugPrint('Logo failure: ${failure.message}');
+          _logoUrlMap = {};
+        },
+        (logos) {
+          final logoMap = {
+            for (final logo in logos)
+              if (logo.channel != null) logo.channel!: logo.url
+          };
+          _logoUrlMap = {
+            for (final s in _channelList ?? []) s.channel!: logoMap[s.channel]
+          };
+        },
+      );
     }
 
-    try {
-      final List<LogoModel> allLogos = await _repository.getLogos();
-      final logoMap = {
-        for (final logo in allLogos)
-          if (logo.channel != null) logo.channel!: logo.url
-      };
-      _logoUrlMap = {
-        for (final s in _channelList ?? []) s.channel!: logoMap[s.channel]
-      };
-    } catch (e) {
-      errorMessage ??= "Failed to load logo: ${e.toString()}";
-    }
-    
-
-    
     isLoading = false;
     notifyListeners();
   }
+
+  Future<void> retry() => fetchChannelData();
+
   bool isFavorite(StreamModel channel) => _favoritesService.isFavorite(channel);
 
   Future<void> toggleFavorite(StreamModel channel) async {
