@@ -1,14 +1,17 @@
 import 'package:flutter/widgets.dart';
 import 'package:mero_tv/app/app.locator.dart';
+import 'package:mero_tv/app/app.router.dart';
 import 'package:mero_tv/models/logo_model.dart';
 import 'package:mero_tv/models/stream_model.dart';
 import 'package:mero_tv/repository/channel_repository.dart';
 import 'package:mero_tv/ui/views/favorites/services/favorites_service.dart';
 import 'package:stacked/stacked.dart';
+import 'package:stacked_services/stacked_services.dart';
 
 class HomeViewModel extends BaseViewModel {
   final ChannelRepository _repository = locator<ChannelRepository>();
   HomeViewModel();
+  final _navigationService = locator<NavigationService>();
 
   bool isLoading = false;
   bool isSearching = false;
@@ -88,6 +91,9 @@ class HomeViewModel extends BaseViewModel {
   Future<void> toggleFavorite(StreamModel channel) async {
     await _favoritesService.toggleFavorite(channel);
     notifyListeners();
+  }
+  navigateToPlayer(String streamUrl, String title){
+    _navigationService.navigateToVideoPlayerView(streamUrl: streamUrl, title: title);
   }
 
 }

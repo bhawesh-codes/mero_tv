@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mero_tv/ui/common/app_colors.dart';
 import 'package:mero_tv/ui/common/ui_helpers.dart';
-import 'package:mero_tv/ui/views/video_player/video_player_view.dart';
 import 'package:stacked/stacked.dart';
 
 import 'home_viewmodel.dart';
@@ -301,13 +300,8 @@ class HomeView extends StackedView<HomeViewModel> {
                         final title =
                             viewModel.channelList![index].title ?? 'Live TV';
                         if (streamUrl != null) {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => VideoPlayerView(
-                                  streamUrl: streamUrl, title: title),
-                            ),
-                          );
+                          viewModel.navigateToPlayer(streamUrl, title);
+                          
                         }
                       },
 
