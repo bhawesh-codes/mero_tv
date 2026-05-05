@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:mero_tv/ui/common/app_colors.dart';
 import 'package:stacked/stacked.dart';
 import 'package:mero_tv/ui/common/ui_helpers.dart';
 
@@ -14,25 +15,33 @@ class StartupView extends StackedView<StartupViewModel> {
     StartupViewModel viewModel,
     Widget? child,
   ) {
-    return const Scaffold(
+    return Scaffold(
+      backgroundColor: kcBackgroundColor,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
-              'Mero TV',
-              style: TextStyle(fontSize: 40, fontWeight: FontWeight.w900),
+            RichText( text: const TextSpan(children: [TextSpan(text: 'Mero',style: TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.w900,
+                  color: kcPrimaryTextColor),), TextSpan(text: 'TV',style: TextStyle(
+                  fontSize: 40,
+                  fontWeight: FontWeight.w900,
+                  color: kcPrimaryColor),)])
+              
+              
             ),
-            Row(
+            const Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Loading ...', style: TextStyle(fontSize: 16)),
+                Text('Loading ...',
+                    style: TextStyle(fontSize: 16, color: kcPrimaryTextColor)),
                 horizontalSpaceSmall,
                 SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(
-                    color: Colors.black,
+                    color: kcPrimaryTextColor,
                     strokeWidth: 6,
                   ),
                 ),
