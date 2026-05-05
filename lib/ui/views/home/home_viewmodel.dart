@@ -3,6 +3,7 @@ import 'package:mero_tv/app/app.locator.dart';
 import 'package:mero_tv/models/logo_model.dart';
 import 'package:mero_tv/models/stream_model.dart';
 import 'package:mero_tv/repository/channel_repository.dart';
+import 'package:mero_tv/ui/views/favorites/services/favorites_service.dart';
 import 'package:stacked/stacked.dart';
 
 class HomeViewModel extends BaseViewModel {
@@ -18,6 +19,7 @@ class HomeViewModel extends BaseViewModel {
   Map<String, String?> _logoUrlMap = {};
   Map<String, String?> get logoUrlMap => _logoUrlMap;
   final TextEditingController searchController = TextEditingController();
+  final FavoritesService _favoritesService = locator<FavoritesService>();
 
   // filtered list based on search query
   List<StreamModel>? get channelList {
@@ -75,8 +77,17 @@ class HomeViewModel extends BaseViewModel {
     } catch (e) {
       errorMessage ??= "Failed to load logo: ${e.toString()}";
     }
+    
 
+    
     isLoading = false;
     notifyListeners();
   }
+  bool isFavorite(StreamModel channel) => _favoritesService.isFavorite(channel);
+
+  Future<void> toggleFavorite(StreamModel channel) async {
+    await _favoritesService.toggleFavorite(channel);
+    notifyListeners();
+  }
+
 }
