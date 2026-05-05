@@ -1,9 +1,11 @@
+import 'package:injectable/injectable.dart';
 import 'package:mero_tv/models/channel_model.dart';
 import 'package:mero_tv/models/logo_model.dart';
 import 'package:mero_tv/models/stream_model.dart';
 import 'package:mero_tv/repository/channel_repository_base.dart';
 import 'package:mero_tv/services/api_service.dart';
 
+@lazySingleton
 class ChannelRepository implements ChannelRepositoryBase{
   final ApiService _apiService;
   ChannelRepository(this._apiService);

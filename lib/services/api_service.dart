@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:injectable/injectable.dart';
 import 'package:mero_tv/models/channel_model.dart';
 import 'package:mero_tv/models/logo_model.dart';
 import 'package:mero_tv/models/stream_model.dart';
@@ -6,9 +7,11 @@ import 'package:retrofit/retrofit.dart';
 
 part 'api_service.g.dart';
 
+@lazySingleton
 @RestApi()
 abstract class ApiService {
-  factory ApiService(Dio dio, {String? baseUrl}) = _ApiService;
+  @factoryMethod
+  factory ApiService(Dio dio) = _ApiService;
 
   @GET('channels.json')
   Future<List<ChannelModel>> getChannels();
