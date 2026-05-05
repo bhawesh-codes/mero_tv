@@ -1,28 +1,35 @@
-// To parse this JSON data, do
-//
-//     final streamModel = streamModelFromJson(jsonString);
 
-import 'dart:convert';
-
+import 'package:hive/hive.dart';
 import 'package:json_annotation/json_annotation.dart';
 
 part 'stream_model.g.dart';
 
-List<StreamModel> streamModelFromJson(String str) => List<StreamModel>.from(
-    json.decode(str).map((x) => StreamModel.fromJson(x)));
-
-String streamModelToJson(List<StreamModel> data) =>
-    json.encode(List<dynamic>.from(data.map((x) => x.toJson())));
-
 @JsonSerializable()
+@HiveType(typeId: 0)
 class StreamModel {
+  @HiveField(0)
   String? channel;
+
+  @HiveField(1)
   String? feed;
+
+  @HiveField(2)
   String? title;
+
+  @HiveField(3)
   String? url;
+
+  @HiveField(4)
   String? quality;
+
+  @HiveField(5)
   String? label;
+
+  @HiveField(6)
+  @JsonKey(name: 'user_agent')
   String? userAgent;
+
+  @HiveField(7)
   String? referrer;
 
   StreamModel({
@@ -36,8 +43,7 @@ class StreamModel {
     this.referrer,
   });
 
-  factory StreamModel.fromJson(Map<String, dynamic> json) => _$StreamModelFromJson(json);
-
+  factory StreamModel.fromJson(Map<String, dynamic> json) =>
+      _$StreamModelFromJson(json);
   Map<String, dynamic> toJson() => _$StreamModelToJson(this);
 }
-
