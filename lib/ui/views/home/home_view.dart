@@ -79,12 +79,35 @@ class HomeView extends StackedView<HomeViewModel> {
             if (viewModel.errorMessage != null &&
                 viewModel.errorMessage!.isNotEmpty) {
               return Center(
-                child: Text(
-                  viewModel.errorMessage!,
-                  style: const TextStyle(color: Colors.orange),
+                child: Padding(
+                  padding: EdgeInsets.all(24.r),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.wifi_off,
+                          size: 64.r, color: kcSecondaryTextColor),
+                      verticalSpaceSmall,
+                      Text(
+                        viewModel.errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.orange),
+                      ),
+                      verticalSpaceMedium,
+                      ElevatedButton.icon(
+                        onPressed: viewModel.retry,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Retry'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: kcPrimaryColor,
+                          foregroundColor: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               );
             }
+
             if (viewModel.channelList == null) {
               return const Center(
                 child: Text("No data"),
@@ -301,7 +324,6 @@ class HomeView extends StackedView<HomeViewModel> {
                             viewModel.channelList![index].title ?? 'Live TV';
                         if (streamUrl != null) {
                           viewModel.navigateToPlayer(streamUrl, title);
-                          
                         }
                       },
 
