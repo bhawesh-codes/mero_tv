@@ -92,6 +92,10 @@ class HomeViewModel extends BaseViewModel {
           _logoUrlMap = {
             for (final s in _channelList ?? []) s.channel!: logoMap[s.channel]
           };
+           _channelList = _channelList?.map((stream) {
+            final logoUrl = logoMap[stream.channel];
+            return stream.copyWith(logoUrl: logoUrl);
+          }).toList();
         },
       );
     }
