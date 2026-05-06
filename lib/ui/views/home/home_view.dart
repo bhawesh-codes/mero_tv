@@ -2,6 +2,8 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mero_tv/ui/common/app_colors.dart';
+import 'package:mero_tv/ui/common/app_text_style.dart';
+import 'package:mero_tv/ui/common/app_text.dart';
 import 'package:mero_tv/ui/common/ui_helpers.dart';
 import 'package:stacked/stacked.dart';
 
@@ -48,16 +50,10 @@ class HomeView extends StackedView<HomeViewModel> {
                 )
               : RichText(
                   text: TextSpan(children: [
-                  TextSpan(
-                      text: 'Mero ',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700, fontSize: 24.sp)),
+                  TextSpan(text: 'Mero ', style: titleLarge),
                   TextSpan(
                       text: 'TV',
-                      style: TextStyle(
-                          fontWeight: FontWeight.w700,
-                          fontSize: 24.sp,
-                          color: kcPrimaryColor))
+                      style: titleLarge.copyWith(color: kcPrimaryColor))
                 ])),
           actions: [
             if (!viewModel.isSearching)
@@ -87,16 +83,19 @@ class HomeView extends StackedView<HomeViewModel> {
                       Icon(Icons.wifi_off,
                           size: 64.r, color: kcSecondaryTextColor),
                       verticalSpaceSmall,
-                      Text(
+                      AppText(
                         viewModel.errorMessage!,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(color: Colors.orange),
+                        style: bodyMedium.copyWith(color: kcPrimaryTextColor),
                       ),
                       verticalSpaceMedium,
                       ElevatedButton.icon(
                         onPressed: viewModel.retry,
                         icon: const Icon(Icons.refresh),
-                        label: const Text('Retry'),
+                        label: AppText(
+                          'Retry',
+                          style: bodyMedium,
+                        ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: kcPrimaryColor,
                           foregroundColor: Colors.white,
@@ -109,8 +108,11 @@ class HomeView extends StackedView<HomeViewModel> {
             }
 
             if (viewModel.channelList == null) {
-              return const Center(
-                child: Text("No data"),
+              return Center(
+                child: AppText(
+                  "No data",
+                  style: bodyMedium,
+                ),
               );
             }
             return Padding(
@@ -146,30 +148,22 @@ class HomeView extends StackedView<HomeViewModel> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          'Live TV',
-                                          style: TextStyle(
-                                              fontSize: 24.sp,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.white),
-                                        ),
+                                        AppText('Live TV',
+                                            style: bodyLarge.copyWith(
+                                                color: kcPrimaryTextColor)),
                                         Text(
                                           'Anywhere.',
-                                          style: TextStyle(
-                                              color: kcPrimaryColor,
-                                              fontSize: 24.sp,
-                                              fontWeight: FontWeight.w600),
+                                          style: bodyLarge.copyWith(
+                                              color: kcPrimaryColor),
                                         ),
-                                        const Text(
+                                        AppText(
                                           'Watch your favotite',
-                                          style: TextStyle(
+                                          style: bodyMedium.copyWith(
                                               color: kcSecondaryTextColor),
                                         ),
-                                        const Text(
-                                          'channels in high quality.',
-                                          style: TextStyle(
-                                              color: kcSecondaryTextColor),
-                                        )
+                                        AppText('channels in high quality.',
+                                            style: bodyMedium.copyWith(
+                                                color: kcSecondaryTextColor))
                                       ],
                                     ),
                                   ),
@@ -193,30 +187,18 @@ class HomeView extends StackedView<HomeViewModel> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          'Watch Your',
-                                          style: TextStyle(
-                                              fontSize: 24.sp,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.white),
-                                        ),
-                                        Text(
-                                          'Favorites.',
-                                          style: TextStyle(
-                                              color: kcPrimaryColor,
-                                              fontSize: 24.sp,
-                                              fontWeight: FontWeight.w600),
-                                        ),
-                                        const Text(
-                                          'Watch your favotite',
-                                          style: TextStyle(
-                                              color: kcSecondaryTextColor),
-                                        ),
-                                        const Text(
-                                          'TV showsin high quality.',
-                                          style: TextStyle(
-                                              color: kcSecondaryTextColor),
-                                        )
+                                        AppText('Watch Your',
+                                            style: bodyLarge.copyWith(
+                                                color: kcPrimaryTextColor)),
+                                        AppText('Favorites.',
+                                            style: bodyLarge.copyWith(
+                                                color: kcPrimaryColor)),
+                                        AppText('Watch your favotite',
+                                            style: bodyMedium.copyWith(
+                                                color: kcSecondaryTextColor)),
+                                        AppText('TV showsin high quality.',
+                                            style: bodyMedium.copyWith(
+                                                color: kcSecondaryTextColor))
                                       ],
                                     ),
                                   ),
@@ -241,30 +223,18 @@ class HomeView extends StackedView<HomeViewModel> {
                                       crossAxisAlignment:
                                           CrossAxisAlignment.start,
                                       children: [
-                                        Text(
-                                          'Watch',
-                                          style: TextStyle(
-                                              fontSize: 24.sp,
-                                              fontWeight: FontWeight.w600,
-                                              color: Colors.white),
-                                        ),
-                                        Text(
-                                          'Trending.',
-                                          style: TextStyle(
-                                              color: kcPrimaryColor,
-                                              fontSize: 24.sp,
-                                              fontWeight: FontWeight.w600),
-                                        ),
-                                        const Text(
-                                          'Watch popular',
-                                          style: TextStyle(
-                                              color: kcSecondaryTextColor),
-                                        ),
-                                        const Text(
-                                          'shows and movies.',
-                                          style: TextStyle(
-                                              color: kcSecondaryTextColor),
-                                        )
+                                        AppText('Watch',
+                                            style: bodyLarge.copyWith(
+                                                color: kcPrimaryTextColor)),
+                                        AppText('Trending.',
+                                            style: bodyLarge.copyWith(
+                                                color: kcPrimaryColor)),
+                                        AppText('Watch popular',
+                                            style: bodyMedium.copyWith(
+                                                color: kcSecondaryTextColor)),
+                                        AppText('shows and movies.',
+                                            style: bodyMedium.copyWith(
+                                                color: kcSecondaryTextColor))
                                       ],
                                     ),
                                   ),
@@ -290,16 +260,14 @@ class HomeView extends StackedView<HomeViewModel> {
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
                               Expanded(
-                                child: Text(
-                                  'All Channels',
-                                  style: TextStyle(
-                                      color: kcPrimaryTextColor,
-                                      fontSize: 18.sp),
-                                ),
+                                child: AppText('All Channels',
+                                    style: titleMedium.copyWith(
+                                        color: kcPrimaryTextColor)),
                               ),
-                              const Text(
+                              AppText(
                                 'All',
-                                style: TextStyle(color: kcPrimaryColor),
+                                style:
+                                    bodyMedium.copyWith(color: kcPrimaryColor),
                               ),
                               const Icon(
                                 Icons.keyboard_arrow_down,
@@ -313,7 +281,7 @@ class HomeView extends StackedView<HomeViewModel> {
                     }
                     final channel = viewModel.channelList![index];
                     final url = viewModel.logoUrlMap[channel.channel];
-                    print(
+                    debugPrint(
                         'index $index | channel: ${channel.channel} | url: $url'); // add this
 
                     return GestureDetector(
@@ -388,19 +356,15 @@ class HomeView extends StackedView<HomeViewModel> {
                                         CrossAxisAlignment.start,
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      Text(
-                                        viewModel.channelList![index].title!,
-                                        overflow: TextOverflow.fade,
-                                        maxLines: 2,
-                                        style: TextStyle(
-                                            fontSize: 16.sp,
-                                            fontWeight: FontWeight.w600,
-                                            color: kcPrimaryTextColor),
-                                      ),
-                                      const Text(
-                                        "●LIVE",
-                                        style: TextStyle(color: kcPrimaryColor),
-                                      )
+                                      AppText(
+                                          viewModel.channelList![index].title!,
+                                          overflow: TextOverflow.fade,
+                                          maxLines: 2,
+                                          style: titleMedium.copyWith(
+                                              color: kcPrimaryTextColor)),
+                                      AppText("●LIVE",
+                                          style: bodySmall.copyWith(
+                                              color: kcPrimaryColor))
                                     ],
                                   ),
                                 ),

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mero_tv/ui/common/app_colors.dart';
+import 'package:mero_tv/ui/common/app_text.dart';
+import 'package:mero_tv/ui/common/app_text_style.dart';
 import 'package:mero_tv/ui/common/ui_helpers.dart';
 import 'package:mero_tv/ui/views/favorites/favorites_viewmodel.dart';
 import 'package:mero_tv/ui/views/video_player/video_player_view.dart';
@@ -20,13 +22,10 @@ class FavoritesView extends StackedView<FavoritesViewModel> {
           text: TextSpan(children: [
             TextSpan(
                 text: 'My ',
-                style: TextStyle(fontWeight: FontWeight.w700, fontSize: 24.sp)),
+                style: titleLarge.copyWith(color: kcPrimaryTextColor)),
             TextSpan(
                 text: 'Favorites',
-                style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 24.sp,
-                    color: kcPrimaryColor))
+                style: titleLarge.copyWith(color: kcPrimaryColor))
           ]),
         ),
       ),
@@ -44,14 +43,14 @@ class FavoritesView extends StackedView<FavoritesViewModel> {
                     Icon(Icons.favorite_border,
                         size: 64.r, color: kcSecondaryTextColor),
                     verticalSpaceSmall,
-                    const Text(
+                    AppText(
                       'No favorites yet',
-                      style: TextStyle(color: kcPrimaryTextColor),
+                      style: bodyMedium.copyWith(color: kcPrimaryTextColor),
                     ),
                     verticalSpaceSmall,
-                    const Text(
+                    AppText(
                       'Tap ♡ on any channel to add',
-                      style: TextStyle(color: kcSecondaryTextColor),
+                      style: bodyMedium.copyWith(color: kcSecondaryTextColor),
                     ),
                   ],
                 ),
@@ -87,12 +86,44 @@ class FavoritesView extends StackedView<FavoritesViewModel> {
                         children: [
                           horizontalSpaceSmall,
                           ClipOval(
-                            child: Container(
-                              width: 50.r,
-                              height: 50.r,
-                              color: Colors.grey[800],
-                              child: const Icon(Icons.tv, color: Colors.white),
-                            ),
+                            child: channel.logoUrl != null
+                                ? Image.network(
+                                    channel.logoUrl!,
+                                    width: 60.r,
+                                    height: 60.r,
+                                    fit: BoxFit.fill,
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            Container(
+                                      width: 60.r,
+                                      height: 60.r,
+                                      color: Colors.grey[300],
+                                      child: const Icon(Icons.tv,
+                                          color: Colors.white),
+                                    ),
+                                    loadingBuilder:
+                                        (context, child, loadingProgress) {
+                                      if (loadingProgress == null) {
+                                        return child;
+                                      }
+                                      return Container(
+                                        width: 60.r,
+                                        height: 60.r,
+                                        color: Colors.grey[300],
+                                        child: const Center(
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2),
+                                        ),
+                                      );
+                                    },
+                                  )
+                                : Container(
+                                    width: 60.r,
+                                    height: 60.r,
+                                    color: Colors.grey[300],
+                                    child: const Icon(Icons.tv,
+                                        color: Colors.white),
+                                  ),
                           ),
                           horizontalSpaceSmall,
                           Expanded(
@@ -100,18 +131,17 @@ class FavoritesView extends StackedView<FavoritesViewModel> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Text(
+                                AppText(
                                   channel.title ?? channel.channel ?? 'Unknown',
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 2,
-                                  style: TextStyle(
-                                      fontSize: 16.sp,
-                                      fontWeight: FontWeight.w600,
+                                  style: titleMedium.copyWith(
                                       color: kcPrimaryTextColor),
                                 ),
-                                const Text(
+                                AppText(
                                   "●LIVE",
-                                  style: TextStyle(color: kcPrimaryColor),
+                                  style:
+                                      bodySmall.copyWith(color: kcPrimaryColor),
                                 ),
                               ],
                             ),

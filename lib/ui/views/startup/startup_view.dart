@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:mero_tv/ui/common/app_colors.dart';
+import 'package:mero_tv/ui/common/app_text.dart';
+import 'package:mero_tv/ui/common/app_text_style.dart';
 import 'package:stacked/stacked.dart';
 import 'package:mero_tv/ui/common/ui_helpers.dart';
 
@@ -31,13 +33,13 @@ class StartupView extends StackedView<StartupViewModel> {
               
               
             ),
-            const Row(
+            Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Loading ...',
-                    style: TextStyle(fontSize: 16, color: kcPrimaryTextColor)),
+                AppText('Loading ...',
+                    style: bodyMedium.copyWith(color: kcPrimaryTextColor)),
                 horizontalSpaceSmall,
-                SizedBox(
+                const SizedBox(
                   width: 16,
                   height: 16,
                   child: CircularProgressIndicator(

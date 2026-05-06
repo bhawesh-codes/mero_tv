@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:media_kit_video/media_kit_video.dart';
+import 'package:mero_tv/ui/common/app_colors.dart';
+import 'package:mero_tv/ui/common/app_text.dart';
+import 'package:mero_tv/ui/common/app_text_style.dart';
 import 'package:mero_tv/ui/views/video_player/video_player_viewmodel.dart';
 import 'package:stacked/stacked.dart';
 
@@ -20,7 +23,7 @@ import 'package:stacked/stacked.dart';
       backgroundColor: Colors.black,
       appBar: AppBar(
         backgroundColor: Colors.black,
-        title: Text(title, style: const TextStyle(color: Colors.white)),
+        title: AppText(title, style: titleMedium.copyWith(color: kcPrimaryTextColor)),
         iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: Center(
