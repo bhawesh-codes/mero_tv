@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
-import 'package:mero_tv/app/const/api_url.dart';
-import 'package:mero_tv/services/dio_interceptor.dart';
+import 'package:mero_tv/core/const/api_url.dart';
+import 'package:mero_tv/services/dio_service/dio_interceptor.dart';
 
 @module
 abstract class DioModule {
