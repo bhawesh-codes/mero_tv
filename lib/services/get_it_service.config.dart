@@ -15,7 +15,7 @@ import 'package:injectable/injectable.dart' as _i526;
 import '../repository/channel_repository.dart' as _i1030;
 import '../ui/views/favorites/services/favorites_service.dart' as _i166;
 import 'api_service.dart' as _i738;
-import 'dio_module.dart' as _i1045;
+import 'dio_service/dio_module.dart' as _i642;
 
 extension GetItInjectableX on _i174.GetIt {
 // initializes the registration of main-scope dependencies inside of GetIt
@@ -38,4 +38,4 @@ extension GetItInjectableX on _i174.GetIt {
   }
 }
 
-class _$DioModule extends _i1045.DioModule {}
+class _$DioModule extends _i642.DioModule {}

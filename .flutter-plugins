@@ -1,14 +1,12 @@
 # This is a generated file; do not edit or check into version control.
 media_kit_libs_android_video=/home/bhaweshb/.pub-cache/hosted/pub.dev/media_kit_libs_android_video-1.3.8/
-media_kit_libs_ios_video=/home/bhaweshb/.pub-cache/hosted/pub.dev/media_kit_libs_ios_video-1.1.4/
-media_kit_libs_linux=/home/bhaweshb/.pub-cache/hosted/pub.dev/media_kit_libs_linux-1.2.1/
-media_kit_libs_macos_video=/home/bhaweshb/.pub-cache/hosted/pub.dev/media_kit_libs_macos_video-1.1.4/
-media_kit_libs_windows_video=/home/bhaweshb/.pub-cache/hosted/pub.dev/media_kit_libs_windows_video-1.0.11/
-media_kit_video=/home/bhaweshb/.pub-cache/hosted/pub.dev/media_kit_video-2.0.1/
+media_kit_video=/home/bhaweshb/.pub-cache/hosted/pub.dev/media_kit_video-1.3.1/
 package_info_plus=/home/bhaweshb/.pub-cache/hosted/pub.dev/package_info_plus-8.3.1/
 path_provider=/home/bhaweshb/.pub-cache/hosted/pub.dev/path_provider-2.1.5/
 path_provider_android=/home/bhaweshb/.pub-cache/hosted/pub.dev/path_provider_android-2.2.10/
 path_provider_foundation=/home/bhaweshb/.pub-cache/hosted/pub.dev/path_provider_foundation-2.4.1/
 path_provider_linux=/home/bhaweshb/.pub-cache/hosted/pub.dev/path_provider_linux-2.2.1/
 path_provider_windows=/home/bhaweshb/.pub-cache/hosted/pub.dev/path_provider_windows-2.3.0/
+screen_brightness_android=/home/bhaweshb/.pub-cache/hosted/pub.dev/screen_brightness_android-2.1.3/
+volume_controller=/home/bhaweshb/.pub-cache/hosted/pub.dev/volume_controller-3.4.4/
 wakelock_plus=/home/bhaweshb/.pub-cache/hosted/pub.dev/wakelock_plus-1.3.0/
