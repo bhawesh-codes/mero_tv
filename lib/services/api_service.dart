@@ -21,5 +21,4 @@ abstract class ApiService {
 
   @GET('streams.json')
   Future<List<StreamModel>> getStreams();
-
 }
