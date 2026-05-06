@@ -25,13 +25,14 @@ class StreamModelAdapter extends TypeAdapter<StreamModel> {
       label: fields[5] as String?,
       userAgent: fields[6] as String?,
       referrer: fields[7] as String?,
+      logoUrl: fields[8] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, StreamModel obj) {
     writer
-      ..writeByte(8)
+      ..writeByte(9)
       ..writeByte(0)
       ..write(obj.channel)
       ..writeByte(1)
@@ -47,7 +48,9 @@ class StreamModelAdapter extends TypeAdapter<StreamModel> {
       ..writeByte(6)
       ..write(obj.userAgent)
       ..writeByte(7)
-      ..write(obj.referrer);
+      ..write(obj.referrer)
+      ..writeByte(8)
+      ..write(obj.logoUrl);
   }
 
   @override
@@ -74,6 +77,7 @@ StreamModel _$StreamModelFromJson(Map<String, dynamic> json) => StreamModel(
       label: json['label'] as String?,
       userAgent: json['user_agent'] as String?,
       referrer: json['referrer'] as String?,
+      logoUrl: json['logoUrl'] as String?,
     );
 
 Map<String, dynamic> _$StreamModelToJson(StreamModel instance) =>
@@ -86,4 +90,5 @@ Map<String, dynamic> _$StreamModelToJson(StreamModel instance) =>
       'label': instance.label,
       'user_agent': instance.userAgent,
       'referrer': instance.referrer,
+      'logoUrl': instance.logoUrl,
     };
