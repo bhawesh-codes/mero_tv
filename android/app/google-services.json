@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "882968677384",
+    "project_id": "mero-tv-1",
+    "storage_bucket": "mero-tv-1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:882968677384:android:9aa9e89e716805008a15bd",
+        "android_client_info": {
+          "package_name": "com.bhawesh.mero_tv"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAlR8pEMqaRImqP71qa6f3n6H9h6fBPjNw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
