@@ -15,3 +15,6 @@ class ServerFailure extends Failure {
 class NoDataFailure extends Failure {
   const NoDataFailure(super.message);
 }
+class UnknownFailure extends Failure {
+  const UnknownFailure(super.message);
+}
