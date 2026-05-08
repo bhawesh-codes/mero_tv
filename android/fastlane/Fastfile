@@ -16,6 +16,7 @@ platform :android do
       # 🧪 Run tests FIRST
       puts "🧪 Running tests..."
       sh("flutter test")
+      sh("flutter test integration_test/app_test.dart")
     end
 
     # 🔼 Increment version ONLY if tests pass
@@ -84,7 +85,7 @@ platform :android do
       firebase_cli_token: ENV["FIREBASE_TOKEN"],
       android_artifact_type: "APK",
       android_artifact_path: apk_path,
-      testers: "bhaweshbaruwal3@gmail.com,scilent.killer10@gmail.com,hritikraj@awecode.np",
+      testers: "bhaweshbaruwal3@gmail.com,scilent.killer10@gmail.com,",
       release_notes: "Beta build #{version}"
     )
     
