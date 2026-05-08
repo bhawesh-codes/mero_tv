@@ -20,7 +20,7 @@ class ChannelListHeader extends StatelessWidget {
         ),
         AppText(
           'All',
-          style: bodyMedium.copyWith(color: kcPrimaryColor),
+          style: bodySmall.copyWith(color: kcPrimaryColor),
         ),
         const Icon(
           Icons.keyboard_arrow_down,
