@@ -11,10 +11,10 @@ class HomeView extends StackedView<HomeViewModel> {
 
   @override
   Widget builder(BuildContext context, HomeViewModel viewModel, Widget? child) {
-    return const Scaffold(
-      appBar: HomeAppBar(),
+    return Scaffold(
+      appBar: HomeAppBar(viewModel: viewModel,),
       backgroundColor: kcBackgroundColor,
-      body: HomeBody(),
+      body: HomeBody(viewModel: viewModel,),
     );
   }
 

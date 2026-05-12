@@ -1,13 +1,14 @@
 // widgets/favorite_card.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mero_tv/models/channel_model.dart';
 import '../../../common/app_colors.dart';
 import '../../../common/app_text.dart';
 import '../../../common/app_text_style.dart';
 import '../../../common/ui_helpers.dart';
 
 class FavoriteCard extends StatelessWidget {
-  final dynamic channel;
+  final ChannelModel channel;
   final VoidCallback onTap;
   final VoidCallback onFavoriteToggle;
 
@@ -91,15 +92,16 @@ class FavoriteCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           AppText(
-            channel.name ?? channel.channel ?? 'Unknown',
+            channel.name ?? 'Unknown',
             overflow: TextOverflow.ellipsis,
             maxLines: 2,
             style: titleMedium.copyWith(color: kcPrimaryTextColor),
           ),
           AppText(
-            "● LIVE",
+            "● LIVE | ${channel.categories?.first.name[0].toUpperCase()}${channel.categories?.first.name.substring(1) ?? 'Unknown'}",
+            overflow: TextOverflow.fade,
             style: bodySmall.copyWith(color: kcPrimaryColor),
-          ),
+          )
         ],
       ),
     );

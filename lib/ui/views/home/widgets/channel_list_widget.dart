@@ -8,25 +8,25 @@ import 'package:stacked/stacked.dart';
 import '../home_viewmodel.dart';
 import 'carousel_slider_widget.dart';
 
-class ChannelListWidget extends StackedView<HomeViewModel> {
+class ChannelListWidget extends StatelessWidget {
   const ChannelListWidget({
-    Key? key,
+    Key? key,required this.viewModel
   }) : super(key: key);
-
+  final HomeViewModel viewModel;
   @override
-  Widget builder(BuildContext context, HomeViewModel viewModel, Widget? child) {
+  Widget build(BuildContext context) {
     return Padding(
       padding: EdgeInsets.all(12.0.r),
       child: ListView.builder(
         itemCount: viewModel.channelList.length,
         itemBuilder: (context, index) {
           if (index == 0) {
-            return const Column(
+            return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                CarouselSliderWidget(),
+                const CarouselSliderWidget(),
                 verticalSpaceSmall,
-                ChannelListHeader(),
+                ChannelListHeader(viewModel: viewModel,),
                 verticalSpaceSmall,
               ],
             );
@@ -52,6 +52,6 @@ class ChannelListWidget extends StackedView<HomeViewModel> {
     );
   }
 
-  @override
-  HomeViewModel viewModelBuilder(BuildContext context) =>HomeViewModel()..fetchChannelData();
+  // @override
+  // HomeViewModel viewModelBuilder(BuildContext context) =>HomeViewModel()..fetchChannelData();
 }

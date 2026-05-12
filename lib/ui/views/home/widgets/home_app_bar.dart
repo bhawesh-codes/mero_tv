@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mero_tv/ui/common/app_colors.dart';
 import 'package:mero_tv/ui/common/app_text_style.dart';
-import 'package:stacked/stacked.dart';
 import '../home_viewmodel.dart';
 
-class HomeAppBar extends StackedView<HomeViewModel> implements PreferredSizeWidget {
+class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
 
-  const HomeAppBar({Key? key}) : super(key: key);
+  const HomeAppBar({Key? key, required this.viewModel}) : super(key: key);
+  final HomeViewModel viewModel;
   
   @override
-  Widget builder(BuildContext context, HomeViewModel viewModel, Widget? child) {
+  Widget build(BuildContext context) {
     return AppBar(
       elevation: 5,
       backgroundColor: kcBackgroundColor,
@@ -67,9 +67,6 @@ class HomeAppBar extends StackedView<HomeViewModel> implements PreferredSizeWidg
       ]),
     );
   }
-  @override
-  HomeViewModel viewModelBuilder(BuildContext context) =>
-      HomeViewModel()..fetchChannelData();
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);

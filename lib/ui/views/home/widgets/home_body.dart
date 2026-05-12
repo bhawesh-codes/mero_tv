@@ -8,12 +8,12 @@ import 'package:stacked/stacked.dart';
 import '../home_viewmodel.dart';
 import 'channel_list_widget.dart';
 
-class HomeBody extends StackedView<HomeViewModel> {
+class HomeBody extends StatelessWidget {
 
-  const HomeBody({Key? key}) : super(key: key);
-  
+  const HomeBody({Key? key, required this.viewModel}) : super(key: key);
+  final HomeViewModel viewModel;
   @override
-  Widget builder (BuildContext context, HomeViewModel viewModel, Widget? child) {
+  Widget build (BuildContext context) {
     return SafeArea(
       child: Builder(builder: (context) {
         if (viewModel.isLoading) {
@@ -34,10 +34,10 @@ class HomeBody extends StackedView<HomeViewModel> {
           );
         }
 
-        return const ChannelListWidget();
+        return ChannelListWidget(viewModel: viewModel,);
       }),
     );
   }
-  @override
-  HomeViewModel viewModelBuilder(BuildContext context) =>HomeViewModel()..fetchChannelData();
+  // @override
+  // HomeViewModel viewModelBuilder(BuildContext context) =>HomeViewModel()..fetchChannelData();
 }

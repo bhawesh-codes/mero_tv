@@ -7,7 +7,6 @@ import 'package:mero_tv/ui/common/app_text.dart';
 import 'package:mero_tv/ui/common/app_text_style.dart';
 import 'package:mero_tv/ui/common/ui_helpers.dart';
 
-
 class ChannelCard extends StatelessWidget {
   final ChannelModel channel;
   final String? logoUrl;
@@ -91,6 +90,10 @@ class ChannelCard extends StatelessWidget {
   }
 
   Widget _buildChannelInfo() {
+    final category = (channel.categories?.isNotEmpty ?? false)
+        ? channel.categories!.first.name[0].toUpperCase() +
+            channel.categories!.first.name.substring(1)
+        : 'Unknown';
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -103,7 +106,7 @@ class ChannelCard extends StatelessWidget {
             style: titleMedium.copyWith(color: kcPrimaryTextColor),
           ),
           AppText(
-            "● LIVE | ${channel.categories?.first.name ?? 'Unknown'}",
+            "● LIVE | $category",
             overflow: TextOverflow.fade,
             style: bodySmall.copyWith(color: kcPrimaryColor),
           ),
