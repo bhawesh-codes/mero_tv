@@ -25,11 +25,23 @@ class HomeViewModel extends BaseViewModel {
   String _searchQuery = '';
   String _selectedCategory = 'All';
   String get selectedCategory => _selectedCategory;
+  String? _selectedCountry;
+  String? get selectedCountry => _selectedCountry;
+
+  // Static variables - shared across all instances
+  static bool _dataLoaded = false;
+  static List<ChannelModel> _cachedChannels = [];
 
   List<ChannelModel> _matchedChannels = [];
 
   List<ChannelModel> get channelList {
-    List<ChannelModel> filtered = _matchedChannels;
+    // Use cached channels if available, otherwise use matched channels
+    List<ChannelModel> filtered =
+        _cachedChannels.isNotEmpty ? _cachedChannels : _matchedChannels;
+
+    if (_selectedCountry != null) {
+      filtered = filtered.where((c) => c.country == _selectedCountry).toList();
+    }
 
     if (_selectedCategory != 'All') {
       final category = Category.values.firstWhere(
@@ -72,6 +84,13 @@ class HomeViewModel extends BaseViewModel {
   }
 
   Future<void> fetchChannelData() async {
+    // Check static flag
+    if (_dataLoaded && _cachedChannels.isNotEmpty) {
+      _matchedChannels = _cachedChannels;
+      notifyListeners();
+      return;
+    }
+
     isLoading = true;
     errorMessage = null;
     notifyListeners();
@@ -135,11 +154,28 @@ class HomeViewModel extends BaseViewModel {
             ))
         .toList();
 
+    // Store in static cache
+    _cachedChannels = _matchedChannels;
+    _dataLoaded = true;
+
     isLoading = false;
     notifyListeners();
   }
 
   Future<void> retry() => fetchChannelData();
+
+  // Optional: Add refresh method if you need to manually reload data
+  Future<void> refreshData() async {
+    _dataLoaded = false;
+    _cachedChannels = [];
+    await fetchChannelData();
+  }
+  
+  void onCountryChanged(String? countryCode) {
+    // toggle off if same country tapped again
+    _selectedCountry = _selectedCountry == countryCode ? null : countryCode;
+    notifyListeners();
+  }
 
   bool isFavorite(ChannelModel channel) =>
       _favoritesService.isFavorite(channel);
