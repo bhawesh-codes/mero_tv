@@ -4,21 +4,21 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mero_tv/ui/common/ui_helpers.dart';
 import 'package:mero_tv/ui/views/home/widgets/caarousel_list_header.dart';
 import 'package:mero_tv/ui/views/home/widgets/channel_card_widget.dart';
+import 'package:stacked/stacked.dart';
 import '../home_viewmodel.dart';
 import 'carousel_slider_widget.dart';
 
-class ChannelListWidget extends StatelessWidget {
-  final HomeViewModel viewModel;
-
-  const ChannelListWidget({Key? key, required this.viewModel})
-      : super(key: key);
+class ChannelListWidget extends StackedView<HomeViewModel> {
+  const ChannelListWidget({
+    Key? key,
+  }) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget builder(BuildContext context, HomeViewModel viewModel, Widget? child) {
     return Padding(
       padding: EdgeInsets.all(12.0.r),
       child: ListView.builder(
-        itemCount: viewModel.channelList!.length,
+        itemCount: viewModel.channelList.length,
         itemBuilder: (context, index) {
           if (index == 0) {
             return const Column(
@@ -32,26 +32,26 @@ class ChannelListWidget extends StatelessWidget {
             );
           }
 
-          final channel = viewModel.channelList![index];
-          final url = viewModel.logoUrlMap[channel.channel];
+          final channel = viewModel.channelList[index];
+          final url = viewModel.channelList[index].logoUrl;
 
-          debugPrint('index $index | channel: ${channel.channel} | url: $url');
+          debugPrint('index $index | channel: ${channel.name} | url: $url');
 
           return ChannelCard(
             channel: channel,
             logoUrl: url,
             isFavorite: viewModel.isFavorite(channel),
             onTap: () {
-              final streamUrl = viewModel.channelList![index].url;
-              final title = viewModel.channelList![index].title ?? 'Live TV';
-              if (streamUrl != null) {
-                viewModel.navigateToPlayer(streamUrl, title);
-              }
-            },
+                viewModel.navigateToPlayer(channel);
+              },
+            
             onFavoriteToggle: () => viewModel.toggleFavorite(channel),
           );
         },
       ),
     );
   }
+
+  @override
+  HomeViewModel viewModelBuilder(BuildContext context) =>HomeViewModel()..fetchChannelData();
 }

@@ -4,16 +4,16 @@ import 'package:mero_tv/ui/common/app_text.dart';
 import 'package:mero_tv/ui/common/app_text_style.dart';
 import 'package:mero_tv/ui/views/home/widgets/error_widgets.dart';
 import 'package:mero_tv/ui/views/home/widgets/loading_widgets.dart';
+import 'package:stacked/stacked.dart';
 import '../home_viewmodel.dart';
 import 'channel_list_widget.dart';
 
-class HomeBody extends StatelessWidget {
-  final HomeViewModel viewModel;
+class HomeBody extends StackedView<HomeViewModel> {
 
-  const HomeBody({Key? key, required this.viewModel}) : super(key: key);
-
+  const HomeBody({Key? key}) : super(key: key);
+  
   @override
-  Widget build(BuildContext context) {
+  Widget builder (BuildContext context, HomeViewModel viewModel, Widget? child) {
     return SafeArea(
       child: Builder(builder: (context) {
         if (viewModel.isLoading) {
@@ -28,14 +28,16 @@ class HomeBody extends StatelessWidget {
           );
         }
 
-        if (viewModel.channelList == null) {
+        if (viewModel.channelList.isEmpty) {
           return Center(
             child: AppText("No data", style: bodyMedium),
           );
         }
 
-        return ChannelListWidget(viewModel: viewModel);
+        return const ChannelListWidget();
       }),
     );
   }
+  @override
+  HomeViewModel viewModelBuilder(BuildContext context) =>HomeViewModel()..fetchChannelData();
 }

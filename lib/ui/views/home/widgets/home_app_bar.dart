@@ -3,19 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mero_tv/ui/common/app_colors.dart';
 import 'package:mero_tv/ui/common/app_text_style.dart';
+import 'package:stacked/stacked.dart';
 import '../home_viewmodel.dart';
 
-class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
-  final HomeViewModel viewModel;
+class HomeAppBar extends StackedView<HomeViewModel> implements PreferredSizeWidget {
 
-  const HomeAppBar({Key? key, required this.viewModel}) : super(key: key);
-
+  const HomeAppBar({Key? key}) : super(key: key);
+  
   @override
-  Widget build(BuildContext context) {
+  Widget builder(BuildContext context, HomeViewModel viewModel, Widget? child) {
     return AppBar(
       elevation: 5,
       backgroundColor: kcBackgroundColor,
-      title: viewModel.isSearching ? _buildSearchField() : _buildTitle(),
+      title: viewModel.isSearching ? _buildSearchField(viewModel) : _buildTitle(),
       actions: [
         if (!viewModel.isSearching)
           IconButton(
@@ -26,7 +26,7 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
     );
   }
 
-  Widget _buildSearchField() {
+  Widget _buildSearchField(HomeViewModel viewModel) {
     return SizedBox(
       height: 40.h,
       child: TextField(
@@ -67,6 +67,9 @@ class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
       ]),
     );
   }
+  @override
+  HomeViewModel viewModelBuilder(BuildContext context) =>
+      HomeViewModel()..fetchChannelData();
 
   @override
   Size get preferredSize => const Size.fromHeight(kToolbarHeight);

@@ -1,6 +1,7 @@
 // widgets/channel_card.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:mero_tv/models/channel_model.dart';
 import 'package:mero_tv/ui/common/app_colors.dart';
 import 'package:mero_tv/ui/common/app_text.dart';
 import 'package:mero_tv/ui/common/app_text_style.dart';
@@ -8,7 +9,7 @@ import 'package:mero_tv/ui/common/ui_helpers.dart';
 
 
 class ChannelCard extends StatelessWidget {
-  final dynamic channel;
+  final ChannelModel channel;
   final String? logoUrl;
   final bool isFavorite;
   final VoidCallback onTap;
@@ -96,13 +97,14 @@ class ChannelCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           AppText(
-            channel.title ?? '',
+            channel.name ?? '',
             overflow: TextOverflow.fade,
             maxLines: 2,
             style: titleMedium.copyWith(color: kcPrimaryTextColor),
           ),
           AppText(
-            "● LIVE",
+            "● LIVE | ${channel.categories?.first.name ?? 'Unknown'}",
+            overflow: TextOverflow.fade,
             style: bodySmall.copyWith(color: kcPrimaryColor),
           ),
         ],
