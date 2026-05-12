@@ -1,5 +1,7 @@
 // main.dart
 import 'dart:ui';
+import 'package:mero_tv/models/channel_model.dart';
+import 'package:mero_tv/repository/channel_repository.dart';
 import 'firebase_options.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_crashlytics/firebase_crashlytics.dart';
@@ -12,7 +14,6 @@ import 'package:mero_tv/app/app.bottomsheets.dart';
 import 'package:mero_tv/app/app.dialogs.dart';
 import 'package:mero_tv/app/app.locator.dart';
 import 'package:mero_tv/app/app.router.dart';
-import 'package:mero_tv/models/stream_model.dart';
 import 'package:mero_tv/services/get_it_service.dart';
 import 'package:stacked_services/stacked_services.dart';
 
@@ -39,12 +40,20 @@ Future<void> main() async {
   await setupLocator();
   setupDialogUi();
   setupBottomSheetUi();
-  await configureDependencies();
-
+  try {
+    await configureDependencies();
+    print('Dependencies configured successfully');
+    print(
+        'IsRegistered ChannelRepository: ${locator.isRegistered<ChannelRepository>()}');
+  } catch (e, stack) {
+    print('configureDependencies FAILED: $e');
+    print(stack);
+  }
   // 🔹 Initialize Hive
   await Hive.initFlutter();
-  Hive.registerAdapter(StreamModelAdapter());
-  await Hive.openBox<StreamModel>('favorites');
+  Hive.registerAdapter(ChannelModelAdapter());
+  Hive.registerAdapter(CategoryAdapter()); 
+  await Hive.openBox<ChannelModel>('favorites');
 
   runApp(const MainApp());
 }
