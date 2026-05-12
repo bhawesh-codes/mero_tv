@@ -1,96 +1,105 @@
 # android/fastlane/Fastfile
-
 default_platform(:android)
 
 platform :android do
   lane :beta do
     root = File.expand_path("../..")
-
     puts "🚀 Starting beta deployment..."
-    
-    # 📦 Clean and get dependencies
+
     Dir.chdir(root) do
       sh("flutter clean")
       sh("flutter pub get")
-      
-      # 🧪 Run tests FIRST
-      puts "🧪 Running tests..."
+
+      puts "🧪 Running unit tests..."
       sh("flutter test")
+
+      puts "🧪 Running integration tests..."
       sh("flutter test integration_test/app_test.dart")
+
+      puts "🧹 Cleaning after integration tests..."
+      sh("flutter clean")
+      sh("flutter pub get")
+
+      # 🗑️ Delete AFTER pub get — pub get regenerates it, so we must delete last
+      generated_file = File.join(root, "android/app/src/main/java/io/flutter/plugins/GeneratedPluginRegistrant.java")
+      if File.exist?(generated_file)
+        File.delete(generated_file)
+        puts "🗑️ Deleted stale GeneratedPluginRegistrant.java"
+      end
     end
 
     # 🔼 Increment version ONLY if tests pass
     pubspec_path = File.join(root, "pubspec.yaml")
     content = File.read(pubspec_path)
-    match = content.match(/version:\s*(\d+\.\d+\.\d+)\+(\d+)/)
-    
+    match = content.match(/version:\s*(\d+)\.(\d+)\.(\d+)\+(\d+)/)
+
     if match
-      version_name = match[1]
-      build_number = match[2].to_i + 1
-      new_version = "#{version_name}+#{build_number}"
-      updated_content = content.gsub(/version:\s*\d+\.\d+\.\d+\+\d+/, "version: #{new_version}")
+      major = match[1].to_i
+      minor = match[2].to_i
+      patch = match[3].to_i + 1
+      build_number = match[4].to_i + 1
+      new_version_name = "#{major}.#{minor}.#{patch}"
+      new_version = "#{new_version_name}+#{build_number}"
+      updated_content = content.gsub(
+        /version:\s*\d+\.\d+\.\d+\+\d+/,
+        "version: #{new_version}"
+      )
       File.write(pubspec_path, updated_content)
-      puts "✅ New version: #{new_version}"
+      puts "✅ Updated version to #{new_version}"
     else
-      puts "⚠️ Could not find version pattern, using default"
-      new_version = "1.0.0+1"
+      UI.user_error!("❌ Could not parse version from pubspec.yaml")
     end
 
-    # 🏗️ Build APK (your Gradle will handle the naming)
+    # 🏗️ Build release APK — no pub get here, so GeneratedPluginRegistrant stays deleted
+    # and Flutter regenerates it fresh during the Gradle build without integration_test
     Dir.chdir(root) do
       puts "📦 Building APK..."
-      sh("flutter build apk --release")
+      sh("flutter build apk --release --no-pub")
     end
 
-    # 📦 Find the APK (check both possible locations)
-    possible_paths = [
-      "#{root}/build/app/outputs/apk/release/mero_tv_*.apk",  # Your renamed APK
-      "#{root}/build/app/outputs/flutter-apk/app-release.apk",  # Default APK
-      "#{root}/build/app/outputs/apk/release/app-release.apk"   # Alternative location
-    ]
-    
+    # 📦 Find the APK
     apk_path = nil
-    
-    # First, try to find your renamed APK with date
+
     renamed_apks = Dir.glob("#{root}/build/app/outputs/apk/release/mero_tv_*.apk")
     if renamed_apks.any?
       apk_path = renamed_apks.first
       puts "✅ Found renamed APK: #{apk_path}"
     else
-      # Fall back to default paths
-      possible_paths[1..-1].each do |path|
-        path_without_wildcard = path.gsub("mero_tv_*.apk", "app-release.apk")
-        if File.exist?(path_without_wildcard)
-          apk_path = path_without_wildcard
+      fallback_paths = [
+        "#{root}/build/app/outputs/flutter-apk/app-release.apk",
+        "#{root}/build/app/outputs/apk/release/app-release.apk"
+      ]
+      fallback_paths.each do |path|
+        if File.exist?(path)
+          apk_path = path
           puts "✅ Found APK at: #{apk_path}"
           break
         end
       end
     end
-    
+
     unless apk_path && File.exist?(apk_path)
-      puts "❌ APK not found! Checked paths:"
-      puts possible_paths
+      puts "❌ APK not found! Checked:"
+      puts "#{root}/build/app/outputs/apk/release/mero_tv_*.apk"
+      puts "#{root}/build/app/outputs/flutter-apk/app-release.apk"
+      puts "#{root}/build/app/outputs/apk/release/app-release.apk"
       UI.user_error!("APK file not found after build")
     end
 
-    # Get the version name for release notes
+    # 📝 Get version name for release notes
     version = File.read(pubspec_path).match(/version:\s*(\d+\.\d+\.\d+)\+\d+/)[1] rescue "1.0.0"
-    
-    # 🚀 Upload to Firebase Distribution
+
+    # 🚀 Upload to Firebase App Distribution
     puts "📤 Uploading to Firebase Distribution..."
-    
     firebase_app_distribution(
       app: "1:882968677384:android:9aa9e89e716805008a15bd",
       firebase_cli_token: ENV["FIREBASE_TOKEN"],
       android_artifact_type: "APK",
       android_artifact_path: apk_path,
-      testers: "bhaweshbaruwal3@gmail.com,scilent.killer10@gmail.com,",
-      release_notes: "Beta build #{version}"
+      testers: "bhaweshbaruwal3@gmail.com,scilent.killer10@gmail.com",
+      release_notes: "Beta build #{version}\n- New features and improvements. Please test and provide feedback!"
     )
-    
+
     puts "✅ Successfully deployed to Firebase Distribution!"
   end
-  
-  
 end
