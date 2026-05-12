@@ -2,15 +2,18 @@ import 'package:fpdart/fpdart.dart';
 import 'package:injectable/injectable.dart';
 import 'package:mero_tv/core/failures/failures.dart';
 import 'package:mero_tv/core/failures/failures_mapper.dart';
+import 'package:mero_tv/models/channel_model.dart';
 import 'package:mero_tv/models/logo_model.dart';
 import 'package:mero_tv/models/stream_model.dart';
+import 'package:mero_tv/repository/channel_repository_base.dart';
 import 'package:mero_tv/services/api_service.dart';
 
 @lazySingleton
-class ChannelRepository {
+class ChannelRepository implements ChannelRepositoryBase {
   final ApiService _apiService;
   ChannelRepository(this._apiService);
 
+  @override
   Future<Either<Failure, List<StreamModel>>> getStreams() async {
     try {
       final result = await _apiService.getStreams();
@@ -21,11 +24,23 @@ class ChannelRepository {
     }
   }
 
+  @override
   Future<Either<Failure, List<LogoModel>>> getLogos() async {
     try {
       final result = await _apiService.getLogos();
       return right(result);
     } catch (e) {
+      return left(FailureMapper.fromException(e));
+    }
+  }
+
+  @override
+  Future<Either<Failure, List<ChannelModel>>> getChannels() async{
+    try {
+      final result = await _apiService.getChannels();
+      return right(result);
+
+    }catch (e){
       return left(FailureMapper.fromException(e));
     }
   }
