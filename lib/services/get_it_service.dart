@@ -1,12 +1,11 @@
-import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart';
+import 'package:stacked/stacked_annotations.dart';
 import 'get_it_service.config.dart';
 
-final getIt = GetIt.instance;
 
 @InjectableInit(
   initializerName: 'init', // default
   preferRelativeImports: true, // default
-  asExtension: true, // default
+  asExtension: false, 
 )
-Future<void> configureDependencies() async=> getIt.init();
+Future<void> configureDependencies() async => init(StackedLocator.instance.locator);
