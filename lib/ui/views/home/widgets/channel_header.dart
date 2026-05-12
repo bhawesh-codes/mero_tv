@@ -34,7 +34,7 @@ class ChannelListHeader extends StatelessWidget {
             width: 80.w,
             child: DropdownButton<String>(
               isExpanded: true,
-              menuWidth: 120.w,
+              menuWidth: 160.w,
               alignment: Alignment.center,
               iconSize: 18.r,
               isDense: true,

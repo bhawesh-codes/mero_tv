@@ -1,6 +1,7 @@
 // widgets/carousel_slider_widget.dart
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mero_tv/ui/common/app_colors.dart';
 import 'package:mero_tv/ui/common/app_text.dart';
 import 'package:mero_tv/ui/common/app_text_style.dart';
@@ -39,8 +40,8 @@ class CarouselSliderWidget extends StatelessWidget {
           ),
         ],
         options: CarouselOptions(
-          height: 180.0,
-          enlargeCenterPage: true,
+          height: 130.sp,
+          enlargeCenterPage: false,
           autoPlay: true,
           aspectRatio: 16 / 9,
           autoPlayCurve: Curves.fastOutSlowIn,
@@ -81,11 +82,15 @@ class CarouselSliderWidget extends StatelessWidget {
             ),
             AppText(
               subtitle1,
+              maxLines: 1,
+              overflow: TextOverflow.fade,
               style: bodyMedium.copyWith(
                   color: kcSecondaryTextColor.withAlpha(200), fontSize: 16),
             ),
             AppText(
               subtitle2,
+              overflow: TextOverflow.fade,
+              maxLines: 1,
               style: bodyMedium.copyWith(
                   color: kcSecondaryTextColor.withAlpha(200), fontSize: 16),
             ),

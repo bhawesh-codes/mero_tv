@@ -1,19 +1,16 @@
 // widgets/home_body.dart
 import 'package:flutter/material.dart';
-import 'package:mero_tv/ui/common/app_text.dart';
-import 'package:mero_tv/ui/common/app_text_style.dart';
 import 'package:mero_tv/ui/views/home/widgets/error_widgets.dart';
 import 'package:mero_tv/ui/views/home/widgets/loading_widgets.dart';
 import 'package:stacked/stacked.dart';
 import '../home_viewmodel.dart';
 import 'channel_list_widget.dart';
 
-class HomeBody extends StatelessWidget {
+class HomeBody extends ViewModelWidget<HomeViewModel> {
 
-  const HomeBody({Key? key, required this.viewModel}) : super(key: key);
-  final HomeViewModel viewModel;
+  const HomeBody({Key? key}) : super(key: key);
   @override
-  Widget build (BuildContext context) {
+  Widget build (BuildContext context, HomeViewModel viewModel) {
     return SafeArea(
       child: Builder(builder: (context) {
         if (viewModel.isLoading) {
@@ -24,17 +21,13 @@ class HomeBody extends StatelessWidget {
             viewModel.errorMessage!.isNotEmpty) {
           return ErrorWidgets(
             errorMessage: viewModel.errorMessage!,
-            onRetry: viewModel.retry,
+            onRetry: viewModel.refreshData,
           );
         }
 
-        if (viewModel.channelList.isEmpty) {
-          return Center(
-            child: AppText("No data", style: bodyMedium),
-          );
-        }
+        
 
-        return ChannelListWidget(viewModel: viewModel,);
+        return const ChannelListWidget();
       }),
     );
   }

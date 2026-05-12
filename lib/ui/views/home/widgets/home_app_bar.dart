@@ -3,15 +3,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mero_tv/ui/common/app_colors.dart';
 import 'package:mero_tv/ui/common/app_text_style.dart';
+import 'package:stacked/stacked.dart';
 import '../home_viewmodel.dart';
 
-class HomeAppBar extends StatelessWidget implements PreferredSizeWidget {
+class HomeAppBar extends ViewModelWidget<HomeViewModel> implements PreferredSizeWidget {
 
-  const HomeAppBar({Key? key, required this.viewModel}) : super(key: key);
-  final HomeViewModel viewModel;
+  const HomeAppBar({Key? key}) : super(key: key);
   
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, HomeViewModel viewModel) {
     return AppBar(
       elevation: 5,
       backgroundColor: kcBackgroundColor,
