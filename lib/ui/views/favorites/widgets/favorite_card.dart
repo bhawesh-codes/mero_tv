@@ -91,7 +91,7 @@ class FavoriteCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           AppText(
-            channel.title ?? channel.channel ?? 'Unknown',
+            channel.name ?? channel.channel ?? 'Unknown',
             overflow: TextOverflow.ellipsis,
             maxLines: 2,
             style: titleMedium.copyWith(color: kcPrimaryTextColor),

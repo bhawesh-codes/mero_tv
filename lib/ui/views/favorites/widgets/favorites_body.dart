@@ -2,17 +2,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mero_tv/ui/views/favorites/widgets/empty_favorites_widgets.dart';
+import 'package:stacked/stacked.dart';
 import '../../video_player/video_player_view.dart';
 import '../favorites_viewmodel.dart';
 import 'favorite_card.dart';
 
-class FavoritesBody extends StatelessWidget {
-  final FavoritesViewModel viewModel;
+class FavoritesBody extends StackedView<FavoritesViewModel> {
 
-  const FavoritesBody({Key? key, required this.viewModel}) : super(key: key);
+  const FavoritesBody({Key? key}) : super(key: key);
 
   @override
-  Widget build(BuildContext context) {
+  Widget builder(BuildContext context, FavoritesViewModel viewModel, Widget? child) {
     return SafeArea(
       child: ValueListenableBuilder(
         valueListenable: viewModel.favoritesListenable,
@@ -32,13 +32,13 @@ class FavoritesBody extends StatelessWidget {
                 return FavoriteCard(
                   channel: channel,
                   onTap: () {
-                    if (channel.url != null) {
+                    if (channel.streamUrl!= null) {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (_) => VideoPlayerView(
-                            streamUrl: channel.url!,
-                            title: channel.title ?? 'Live TV',
+                            streamUrl: channel.streamUrl!,
+                            title: channel.name ?? 'Live TV',
                           ),
                         ),
                       );
@@ -53,4 +53,9 @@ class FavoritesBody extends StatelessWidget {
       ),
     );
   }
+  @override
+  FavoritesViewModel viewModelBuilder(BuildContext context) =>
+      FavoritesViewModel();
+      
+        
 }

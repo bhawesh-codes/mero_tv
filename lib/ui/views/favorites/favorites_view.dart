@@ -12,10 +12,10 @@ class FavoritesView extends StackedView<FavoritesViewModel> {
   @override
   Widget builder(
       BuildContext context, FavoritesViewModel viewModel, Widget? child) {
-    return Scaffold(
+    return const Scaffold(
       backgroundColor: kcBackgroundColor,
-      appBar: const FavoritesAppBar(),
-      body: FavoritesBody(viewModel: viewModel),
+      appBar: FavoritesAppBar(),
+      body: FavoritesBody(),
     );
   }
 
