@@ -2,7 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mero_tv/ui/common/ui_helpers.dart';
-import 'package:mero_tv/ui/views/home/widgets/caarousel_list_header.dart';
+import 'package:mero_tv/ui/views/home/widgets/channel_header.dart';
 import 'package:mero_tv/ui/views/home/widgets/channel_card_widget.dart';
 import 'package:stacked/stacked.dart';
 import '../home_viewmodel.dart';
