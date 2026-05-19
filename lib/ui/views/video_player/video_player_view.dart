@@ -1,5 +1,5 @@
+import 'package:better_player_enhanced/better_player.dart';
 import 'package:flutter/material.dart';
-import 'package:media_kit_video/media_kit_video.dart';
 import 'package:mero_tv/ui/common/app_colors.dart';
 import 'package:mero_tv/ui/common/app_text.dart';
 import 'package:mero_tv/ui/common/app_text_style.dart';
@@ -19,6 +19,10 @@ class VideoPlayerView extends StackedView<VideoPlayerViewModel> {
   @override
   Widget builder(
       BuildContext context, VideoPlayerViewModel viewModel, Widget? child) {
+    // GlobalKey required for PiP
+    // final GlobalKey betterPlayerKey = GlobalKey();
+    // viewModel.setBetterPlayerKey(betterPlayerKey);
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -26,6 +30,15 @@ class VideoPlayerView extends StackedView<VideoPlayerViewModel> {
         title: AppText(title,
             style: titleMedium.copyWith(color: kcPrimaryTextColor)),
         iconTheme: const IconThemeData(color: Colors.white),
+        // actions: [
+        //   // ✅ Manual PiP button in AppBar as fallback
+        //   if (viewModel.controller != null)
+        //     IconButton(
+        //       icon:
+        //           const Icon(Icons.picture_in_picture_alt, color: Colors.white),
+        //       onPressed: () => viewModel.enablePip(),
+        //     ),
+        // ],
       ),
       body: Center(
         child: viewModel.containsError
@@ -49,7 +62,15 @@ class VideoPlayerView extends StackedView<VideoPlayerViewModel> {
                   ),
                 ],
               )
-            : Video(controller: viewModel.controller),
+            : viewModel.controller == null
+                ? const CircularProgressIndicator(color: Colors.white)
+                : AspectRatio(
+                    aspectRatio: 16 / 9,
+                    child: BetterPlayer(
+                      controller: viewModel.controller!,
+                      // key: betterPlayerKey, // ✅ required for PiP
+                    ),
+                  ),
       ),
     );
   }
