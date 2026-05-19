@@ -9,7 +9,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:hive_flutter/adapters.dart';
-import 'package:media_kit/media_kit.dart';
 import 'package:mero_tv/app/app.bottomsheets.dart';
 import 'package:mero_tv/app/app.dialogs.dart';
 import 'package:mero_tv/app/app.locator.dart';
@@ -34,7 +33,7 @@ Future<void> main() async {
     };
   }
 
-  MediaKit.ensureInitialized();
+  // MediaKit.ensureInitialized();
 
   // 🔹 Setup locator only if not already set up
   await setupLocator();
