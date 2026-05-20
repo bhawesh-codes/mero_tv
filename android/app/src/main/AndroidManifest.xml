@@ -6,7 +6,8 @@
         android:usesCleartextTraffic="true"
         android:label="MeroTv"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/ic_launcher"
+        android:hardwareAccelerated="true">
 
         <activity
             android:name=".MainActivity"
