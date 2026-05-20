@@ -10,10 +10,10 @@ final TextStyle bodyLarge =
     TextStyle(fontSize: 24.sp, fontWeight: FontWeight.w600);
 
 final TextStyle bodyMedium =
-    TextStyle(fontSize: 18.sp, fontWeight: FontWeight.normal);
+    TextStyle(fontSize: 16.sp, fontWeight: FontWeight.normal);
 
 final TextStyle bodySmall =
-    TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w400);
+    TextStyle(fontSize: 12.sp, fontWeight: FontWeight.w400);
 
 final TextStyle titleMedium =
     TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600);
