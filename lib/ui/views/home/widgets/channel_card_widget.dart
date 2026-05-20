@@ -105,11 +105,11 @@ class ChannelCard extends StatelessWidget {
             maxLines: 2,
             style: titleMedium.copyWith(color: kcPrimaryTextColor),
           ),
-          AppText(
-            "● LIVE | $category",
-            overflow: TextOverflow.fade,
-            style: bodySmall.copyWith(color: kcPrimaryColor),
-          ),
+          // AppText(
+          //   "● LIVE | $category",
+          //   overflow: TextOverflow.fade,
+          //   style: bodySmall.copyWith(color: kcPrimaryColor),
+          // ),
         ],
       ),
     );
