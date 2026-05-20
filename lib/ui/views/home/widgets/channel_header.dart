@@ -23,17 +23,15 @@ class ChannelListHeader extends StatelessWidget {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Expanded(
-          child: AppText(
-            'All Channels',
-            style: titleMedium.copyWith(color: kcPrimaryTextColor),
-          ),
+        AppText(
+          'All Channels',
+          style: titleMedium.copyWith(color: kcPrimaryTextColor),
         ),
+        const Spacer(),
         DropdownButtonHideUnderline(
           child: SizedBox(
-            width: 80.w,
+            width: 100.w,
             child: DropdownButton<String>(
-              isExpanded: true,
               menuWidth: 160.w,
               alignment: Alignment.center,
               iconSize: 18.r,
