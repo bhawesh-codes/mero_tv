@@ -1,5 +1,5 @@
-// main.dart
 import 'dart:ui';
+import 'package:flutter/services.dart';
 import 'package:mero_tv/models/channel_model.dart';
 import 'package:mero_tv/repository/channel_repository.dart';
 import 'firebase_options.dart';
@@ -19,26 +19,49 @@ import 'package:stacked_services/stacked_services.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // 🔹 Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
 
-  // 🔹 Disable Crashlytics in debug/test mode
-  if (!kDebugMode) {
-    FlutterError.onError = FirebaseCrashlytics.instance.recordFlutterError;
-    PlatformDispatcher.instance.onError = (error, stack) {
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+  // ✅ Single unified error handler — not overwritten below
+  FlutterError.onError = (FlutterErrorDetails details) {
+    final exception = details.exception;
+    if (exception is RangeError &&
+        exception.message.toString().contains('millisecondsSinceEpoch')) {
+      debugPrint('Caught flutter timestamp overflow (ignored): $exception');
+      return;
+    }
+    if (exception is PlatformException && exception.code == 'VideoError') {
+      debugPrint('Caught VideoError: ${exception.message}');
+      return;
+    }
+    if (!kDebugMode) {
+      FirebaseCrashlytics.instance.recordFlutterError(details);
+    } else {
+      FlutterError.presentError(details);
+    }
+  };
+
+  PlatformDispatcher.instance.onError = (error, stack) {
+    if (error is RangeError &&
+        error.message.toString().contains('millisecondsSinceEpoch')) {
+      debugPrint('Caught stream timestamp overflow (ignored): $error');
       return true;
-    };
-  }
+    }
+    if (error is PlatformException && error.code == 'VideoError') {
+      debugPrint('Caught async VideoError: ${error.message}');
+      return true;
+    }
+    if (!kDebugMode) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    }
+    return true;
+  };
 
-  // MediaKit.ensureInitialized();
-
-  // 🔹 Setup locator only if not already set up
   await setupLocator();
   setupDialogUi();
   setupBottomSheetUi();
+
   try {
     await configureDependencies();
     print('Dependencies configured successfully');
@@ -48,10 +71,10 @@ Future<void> main() async {
     print('configureDependencies FAILED: $e');
     print(stack);
   }
-  // 🔹 Initialize Hive
+
   await Hive.initFlutter();
   Hive.registerAdapter(ChannelModelAdapter());
-  Hive.registerAdapter(CategoryAdapter()); 
+  Hive.registerAdapter(CategoryAdapter());
   await Hive.openBox<ChannelModel>('favorites');
 
   runApp(const MainApp());
@@ -63,17 +86,18 @@ class MainApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ScreenUtilInit(
-        designSize: const Size(360, 690),
-        minTextAdapt: true,
-        splitScreenMode: true,
-        builder: (_, child) {
-          return MaterialApp(
-            debugShowCheckedModeBanner: false,
-            initialRoute: Routes.startupView,
-            onGenerateRoute: StackedRouter().onGenerateRoute,
-            navigatorKey: StackedService.navigatorKey,
-            navigatorObservers: [StackedService.routeObserver],
-          );
-        });
+      designSize: const Size(360, 690),
+      minTextAdapt: true,
+      splitScreenMode: true,
+      builder: (_, child) {
+        return MaterialApp(
+          debugShowCheckedModeBanner: false,
+          initialRoute: Routes.startupView,
+          onGenerateRoute: StackedRouter().onGenerateRoute,
+          navigatorKey: StackedService.navigatorKey,
+          navigatorObservers: [StackedService.routeObserver],
+        );
+      },
+    );
   }
 }
