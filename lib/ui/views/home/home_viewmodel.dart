@@ -192,4 +192,23 @@ class HomeViewModel extends BaseViewModel {
       title: channel.name ?? '',
     );
   }
+  bool showAllCountries = false;
+  bool showAllCategories = false;
+
+  void toggleCountriesExpand() {
+    showAllCountries = !showAllCountries;
+    notifyListeners();
+  }
+
+  void toggleCategoriesExpand() {
+    showAllCategories = !showAllCategories;
+    notifyListeners();
+  }
+
+// Keep this getter for favorites (if needed elsewhere)
+  List<ChannelModel> get favoriteChannels {
+    return _cachedChannels
+        .where((c) => _favoritesService.isFavorite(c))
+        .toList();
+  }
 }
