@@ -19,7 +19,7 @@ class MainView extends StackedView<MainViewModel> {
         onTap: viewModel.setIndex,
         backgroundColor: const Color.fromARGB(255, 11, 11, 11),
         selectedItemColor: kcPrimaryColor,
-        unselectedItemColor: kcDisabledTextColor,
+        unselectedItemColor: kcSecondaryTextColor,
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.live_tv),
