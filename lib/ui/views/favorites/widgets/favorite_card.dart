@@ -97,11 +97,11 @@ class FavoriteCard extends StatelessWidget {
             maxLines: 2,
             style: titleMedium.copyWith(color: kcPrimaryTextColor),
           ),
-          AppText(
-            "● LIVE | ${channel.categories?.first.name[0].toUpperCase()}${channel.categories?.first.name.substring(1) ?? 'Unknown'}",
-            overflow: TextOverflow.fade,
-            style: bodySmall.copyWith(color: kcPrimaryColor),
-          )
+          // AppText(
+          //   "● LIVE | ${channel.categories?.first.name[0].toUpperCase()}${channel.categories?.first.name.substring(1) ?? 'Unknown'}",
+          //   overflow: TextOverflow.fade,
+          //   style: bodySmall.copyWith(color: kcPrimaryColor),
+          // )
         ],
       ),
     );
