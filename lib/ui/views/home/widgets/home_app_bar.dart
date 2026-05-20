@@ -6,16 +6,18 @@ import 'package:mero_tv/ui/common/app_text_style.dart';
 import 'package:stacked/stacked.dart';
 import '../home_viewmodel.dart';
 
-class HomeAppBar extends ViewModelWidget<HomeViewModel> implements PreferredSizeWidget {
-
+class HomeAppBar extends ViewModelWidget<HomeViewModel>
+    implements PreferredSizeWidget {
   const HomeAppBar({Key? key}) : super(key: key);
-  
+
   @override
   Widget build(BuildContext context, HomeViewModel viewModel) {
     return AppBar(
+      centerTitle: false,
       elevation: 5,
       backgroundColor: kcBackgroundColor,
-      title: viewModel.isSearching ? _buildSearchField(viewModel) : _buildTitle(),
+      title:
+          viewModel.isSearching ? _buildSearchField(viewModel) : _buildTitle(),
       actions: [
         if (!viewModel.isSearching)
           IconButton(
@@ -57,14 +59,25 @@ class HomeAppBar extends ViewModelWidget<HomeViewModel> implements PreferredSize
   }
 
   Widget _buildTitle() {
-    return RichText(
-      text: TextSpan(children: [
-        TextSpan(text: 'Mero ', style: titleLarge),
-        TextSpan(
-          text: 'TV',
-          style: titleLarge.copyWith(color: kcPrimaryColor),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        RichText(
+          text: TextSpan(children: [
+            TextSpan(text: 'Mero ', style: titleLarge),
+            TextSpan(
+              text: 'TV',
+              style: titleLarge.copyWith(color: kcPrimaryColor),
+            ),
+          ]),
         ),
-      ]),
+        Text(
+          'Stream Anywhere',
+          style: bodySmall.copyWith(
+            color: kcSecondaryTextColor.withAlpha(200),
+          ),
+        )
+      ],
     );
   }
 
