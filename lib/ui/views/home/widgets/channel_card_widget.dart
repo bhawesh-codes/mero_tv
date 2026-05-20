@@ -90,10 +90,6 @@ class ChannelCard extends StatelessWidget {
   }
 
   Widget _buildChannelInfo() {
-    final category = (channel.categories?.isNotEmpty ?? false)
-        ? channel.categories!.first.name[0].toUpperCase() +
-            channel.categories!.first.name.substring(1)
-        : 'Unknown';
     return Expanded(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
