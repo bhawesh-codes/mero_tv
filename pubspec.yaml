@@ -7,7 +7,8 @@ environment:
   sdk: '>=3.0.3 <4.0.0'
 
 dependencies:
-  better_player_enhanced: ^0.0.5
+  better_player_enhanced:
+    path: packages/better_player_enhanced
   carousel_slider: ^5.1.2
   dio: ^5.9.2
   firebase_analytics: ^12.3.0
