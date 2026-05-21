@@ -96,8 +96,8 @@ platform :android do
       firebase_cli_token: ENV["FIREBASE_TOKEN"],
       android_artifact_type: "APK",
       android_artifact_path: apk_path,
-      testers: "bhaweshbaruwal3@gmail.com,scilent.killer10@gmail.com, hritikraj@awecode.com.np,dipesh@awecode.com, raju@awecode.com,sujal@awecode.com.np ",
-      release_notes: "Beta build #{version}\n- New features and improvements: \n -Add category filtering \n - Add Country Filtering \n - Fix homepage loading multiple times \n - Fixed and Improved favorites view \n - Improved search functionality \n Please test and provide feedback!"
+      testers: "bhaweshbaruwal3@gmail.com,scilent.killer10@gmail.com, hritikraj@awecode.com.np,dipesh@awecode.com, raju@awecode.com,sujal@awecode.com.np, pujan@awecode.com",
+      release_notes: "Beta build #{version}\n- New features and improvements: \n -Add category filtering \n - Add Country Filtering \n - Fix homepage loading multiple times \n -UI improvements \n - Changed Media player \n - Fixed and Improved favorites view \n - Improved search functionality \n Please test and provide feedback!"
     )
 
     puts "✅ Successfully deployed to Firebase Distribution!"
