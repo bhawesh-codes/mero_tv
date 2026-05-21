@@ -19,44 +19,66 @@ import 'package:stacked_services/stacked_services.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  // Initialize Hive first (doesn't depend on Firebase)
+  await Hive.initFlutter();
+  Hive.registerAdapter(ChannelModelAdapter());
+  Hive.registerAdapter(CategoryAdapter());
+  await Hive.openBox<ChannelModel>('favorites');
 
-  // ✅ Single unified error handler — not overwritten below
-  FlutterError.onError = (FlutterErrorDetails details) {
-    final exception = details.exception;
-    if (exception is RangeError &&
-        exception.message.toString().contains('millisecondsSinceEpoch')) {
-      debugPrint('Caught flutter timestamp overflow (ignored): $exception');
-      return;
-    }
-    if (exception is PlatformException && exception.code == 'VideoError') {
-      debugPrint('Caught VideoError: ${exception.message}');
-      return;
-    }
-    if (!kDebugMode) {
-      FirebaseCrashlytics.instance.recordFlutterError(details);
+  // Initialize Firebase with error handling
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('✅ Firebase initialized successfully');
+  } catch (e) {
+    print('❌ Firebase initialization failed: $e');
+    // Continue running even if Firebase fails (for development)
+    if (kDebugMode) {
+      print('Running without Firebase in debug mode');
     } else {
-      FlutterError.presentError(details);
+      // In production, you might want to show an error dialog
+      rethrow;
     }
-  };
+  }
 
-  PlatformDispatcher.instance.onError = (error, stack) {
-    if (error is RangeError &&
-        error.message.toString().contains('millisecondsSinceEpoch')) {
-      debugPrint('Caught stream timestamp overflow (ignored): $error');
-      return true;
-    }
-    if (error is PlatformException && error.code == 'VideoError') {
-      debugPrint('Caught async VideoError: ${error.message}');
-      return true;
-    }
+  // Setup crashlytics only if Firebase initialized successfully
+  if (Firebase.apps.isNotEmpty) {
+    // Pass all uncaught errors to Crashlytics.
     if (!kDebugMode) {
-      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      FlutterError.onError = (FlutterErrorDetails details) {
+        final exception = details.exception;
+
+        // Ignore specific known errors
+        if (exception is RangeError &&
+            exception.message.toString().contains('millisecondsSinceEpoch')) {
+          debugPrint('Caught flutter timestamp overflow (ignored): $exception');
+          return;
+        }
+        if (exception is PlatformException && exception.code == 'VideoError') {
+          debugPrint('Caught VideoError: ${exception.message}');
+          return;
+        }
+
+        FirebaseCrashlytics.instance.recordFlutterError(details);
+      };
+
+      PlatformDispatcher.instance.onError = (error, stack) {
+        if (error is RangeError &&
+            error.message.toString().contains('millisecondsSinceEpoch')) {
+          debugPrint('Caught stream timestamp overflow (ignored): $error');
+          return true;
+        }
+        if (error is PlatformException && error.code == 'VideoError') {
+          debugPrint('Caught async VideoError: ${error.message}');
+          return true;
+        }
+
+        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+        return true;
+      };
     }
-    return true;
-  };
+  }
 
   await setupLocator();
   setupDialogUi();
@@ -64,18 +86,13 @@ Future<void> main() async {
 
   try {
     await configureDependencies();
-    print('Dependencies configured successfully');
+    print('✅ Dependencies configured successfully');
     print(
         'IsRegistered ChannelRepository: ${locator.isRegistered<ChannelRepository>()}');
   } catch (e, stack) {
-    print('configureDependencies FAILED: $e');
+    print('❌ configureDependencies FAILED: $e');
     print(stack);
   }
-
-  await Hive.initFlutter();
-  Hive.registerAdapter(ChannelModelAdapter());
-  Hive.registerAdapter(CategoryAdapter());
-  await Hive.openBox<ChannelModel>('favorites');
 
   runApp(const MainApp());
 }
@@ -92,10 +109,47 @@ class MainApp extends StatelessWidget {
       builder: (_, child) {
         return MaterialApp(
           debugShowCheckedModeBanner: false,
+          title: 'Mero TV',
           initialRoute: Routes.startupView,
           onGenerateRoute: StackedRouter().onGenerateRoute,
           navigatorKey: StackedService.navigatorKey,
           navigatorObservers: [StackedService.routeObserver],
+          builder: (context, child) {
+            // Add a wrapper to show Firebase connection status in debug
+            if (kDebugMode && Firebase.apps.isEmpty) {
+              return Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.warning_amber_rounded,
+                          size: 64, color: Colors.orange),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Firebase Not Connected',
+                        style: TextStyle(
+                            fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Running in offline mode',
+                        style: TextStyle(color: Colors.grey),
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: () {
+                          // Retry Firebase initialization
+                          // You might want to implement retry logic here
+                        },
+                        child: const Text('Retry Connection'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
+            }
+            return child!;
+          },
         );
       },
     );
