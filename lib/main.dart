@@ -17,13 +17,29 @@ import 'package:mero_tv/services/get_it_service.dart';
 import 'package:stacked_services/stacked_services.dart';
 
 Future<void> main() async {
+  // Initialize WidgetsFlutterBinding first
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Hive first (doesn't depend on Firebase)
-  await Hive.initFlutter();
-  Hive.registerAdapter(ChannelModelAdapter());
-  Hive.registerAdapter(CategoryAdapter());
-  await Hive.openBox<ChannelModel>('favorites');
+  // Add a small delay to ensure platform channels are ready
+  await Future.delayed(const Duration(milliseconds: 100));
+
+  // Initialize Hive with error handling
+  try {
+    await Hive.initFlutter();
+    print('✅ Hive initialized successfully');
+
+    // Register adapters before opening boxes
+    Hive.registerAdapter(ChannelModelAdapter());
+    Hive.registerAdapter(CategoryAdapter());
+
+    // Open favorite box
+    await Hive.openBox<ChannelModel>('favorites');
+    print('✅ Hive boxes opened successfully');
+  } catch (e) {
+    print('❌ Hive initialization failed: $e');
+    // If Hive fails, we can continue without persistence
+    // The app will still work but favorites won't be saved
+  }
 
   // Initialize Firebase with error handling
   try {
@@ -33,53 +49,44 @@ Future<void> main() async {
     print('✅ Firebase initialized successfully');
   } catch (e) {
     print('❌ Firebase initialization failed: $e');
-    // Continue running even if Firebase fails (for development)
-    if (kDebugMode) {
-      print('Running without Firebase in debug mode');
-    } else {
-      // In production, you might want to show an error dialog
-      rethrow;
-    }
   }
 
   // Setup crashlytics only if Firebase initialized successfully
-  if (Firebase.apps.isNotEmpty) {
-    // Pass all uncaught errors to Crashlytics.
-    if (!kDebugMode) {
-      FlutterError.onError = (FlutterErrorDetails details) {
-        final exception = details.exception;
+  if (Firebase.apps.isNotEmpty && !kDebugMode) {
+    FlutterError.onError = (FlutterErrorDetails details) {
+      final exception = details.exception;
 
-        // Ignore specific known errors
-        if (exception is RangeError &&
-            exception.message.toString().contains('millisecondsSinceEpoch')) {
-          debugPrint('Caught flutter timestamp overflow (ignored): $exception');
-          return;
-        }
-        if (exception is PlatformException && exception.code == 'VideoError') {
-          debugPrint('Caught VideoError: ${exception.message}');
-          return;
-        }
+      // Ignore specific known errors
+      if (exception is RangeError &&
+          exception.message.toString().contains('millisecondsSinceEpoch')) {
+        debugPrint('Caught flutter timestamp overflow (ignored): $exception');
+        return;
+      }
+      if (exception is PlatformException && exception.code == 'VideoError') {
+        debugPrint('Caught VideoError: ${exception.message}');
+        return;
+      }
 
-        FirebaseCrashlytics.instance.recordFlutterError(details);
-      };
+      FirebaseCrashlytics.instance.recordFlutterError(details);
+    };
 
-      PlatformDispatcher.instance.onError = (error, stack) {
-        if (error is RangeError &&
-            error.message.toString().contains('millisecondsSinceEpoch')) {
-          debugPrint('Caught stream timestamp overflow (ignored): $error');
-          return true;
-        }
-        if (error is PlatformException && error.code == 'VideoError') {
-          debugPrint('Caught async VideoError: ${error.message}');
-          return true;
-        }
-
-        FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+    PlatformDispatcher.instance.onError = (error, stack) {
+      if (error is RangeError &&
+          error.message.toString().contains('millisecondsSinceEpoch')) {
+        debugPrint('Caught stream timestamp overflow (ignored): $error');
         return true;
-      };
-    }
+      }
+      if (error is PlatformException && error.code == 'VideoError') {
+        debugPrint('Caught async VideoError: ${error.message}');
+        return true;
+      }
+
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
   }
 
+  // Setup locators and dependencies
   await setupLocator();
   setupDialogUi();
   setupBottomSheetUi();
@@ -114,42 +121,6 @@ class MainApp extends StatelessWidget {
           onGenerateRoute: StackedRouter().onGenerateRoute,
           navigatorKey: StackedService.navigatorKey,
           navigatorObservers: [StackedService.routeObserver],
-          builder: (context, child) {
-            // Add a wrapper to show Firebase connection status in debug
-            if (kDebugMode && Firebase.apps.isEmpty) {
-              return Scaffold(
-                body: Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(Icons.warning_amber_rounded,
-                          size: 64, color: Colors.orange),
-                      const SizedBox(height: 16),
-                      const Text(
-                        'Firebase Not Connected',
-                        style: TextStyle(
-                            fontSize: 18, fontWeight: FontWeight.bold),
-                      ),
-                      const SizedBox(height: 8),
-                      const Text(
-                        'Running in offline mode',
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                      const SizedBox(height: 24),
-                      ElevatedButton(
-                        onPressed: () {
-                          // Retry Firebase initialization
-                          // You might want to implement retry logic here
-                        },
-                        child: const Text('Retry Connection'),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }
-            return child!;
-          },
         );
       },
     );
