@@ -21,8 +21,16 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Add a small delay to ensure platform channels are ready
-  await Future.delayed(const Duration(milliseconds: 100));
+  // await Future.delayed(const Duration(milliseconds: 100));
 
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    print('✅ Firebase initialized successfully');
+  } catch (e) {
+    print('❌ Firebase initialization failed: $e');
+  }
   // Initialize Hive with error handling
   try {
     await Hive.initFlutter();
@@ -42,14 +50,7 @@ Future<void> main() async {
   }
 
   // Initialize Firebase with error handling
-  try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
-    print('✅ Firebase initialized successfully');
-  } catch (e) {
-    print('❌ Firebase initialization failed: $e');
-  }
+
 
   // Setup crashlytics only if Firebase initialized successfully
   if (Firebase.apps.isNotEmpty && !kDebugMode) {
