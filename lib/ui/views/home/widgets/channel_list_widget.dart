@@ -19,8 +19,6 @@ class ChannelListWidget extends ViewModelWidget<HomeViewModel> {
 
   @override
   Widget build(BuildContext context, HomeViewModel viewModel) {
-    
-    
     return Padding(
       padding: EdgeInsets.fromLTRB(12.r, 4.r, 12.r, 4.r),
       child: CustomScrollView(
@@ -126,7 +124,7 @@ class ChannelListWidget extends ViewModelWidget<HomeViewModel> {
               ? SliverToBoxAdapter(
                   child: Center(
                   child: AppText("No data",
-                      style: bodyMedium.copyWith(color: kcDisabledTextColor)),
+                      style: bodyMedium.copyWith(color: kcSecondaryTextColor)),
                 ))
               : // Channel List - Using SliverList.builder for 15,000 items
               SliverList.builder(
