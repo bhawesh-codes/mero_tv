@@ -42,10 +42,11 @@ class VideoPlayerViewModel extends BaseViewModel {
         liveStream: true,
         videoExtension: 'm3u8',
         bufferingConfiguration: const BetterPlayerBufferingConfiguration(
-          minBufferMs: 3000,
+          minBufferMs: 10000, // Changed from 1500 to 5000
           maxBufferMs: 15000,
           bufferForPlaybackMs: 1500,
-          bufferForPlaybackAfterRebufferMs: 3000,
+          bufferForPlaybackAfterRebufferMs:
+              10000, // This is now equal to minBufferMs (allowed)
         ),
         cacheConfiguration: const BetterPlayerCacheConfiguration(
           useCache: false,
@@ -64,7 +65,7 @@ class VideoPlayerViewModel extends BaseViewModel {
           autoPlay: true,
           fit: BoxFit.cover,
           handleLifecycle: false,
-          autoDispose: false, // we manage dispose manually
+          autoDispose: false,
           allowedScreenSleep: false,
           fullScreenByDefault: false,
           useRootNavigator: true,
@@ -80,22 +81,41 @@ class VideoPlayerViewModel extends BaseViewModel {
         ),
       );
 
+      // Add listener BEFORE setting up data source
+      controller.addEventsListener(_onPlayerEvent);
+
       await controller.setupDataSource(dataSource);
 
       if (_isDisposed) {
-        // view was closed while we were setting up — dispose silently
         _silentDispose(controller);
         return;
       }
 
-      controller.addEventsListener(_onPlayerEvent);
       _controller = controller;
       _isPlayerReady = true;
+      containsError = false;
+      errorMessage = null;
       notifyListeners();
-    } catch (e) {
-      debugPrint('Player init error: $e');
+
+      debugPrint('✅ Player initialized successfully for: $url');
+    } catch (e, stackTrace) {
+      debugPrint('❌ Player init error: $e');
+      debugPrint('Stack trace: $stackTrace');
+
       if (!_isDisposed) {
-        _handleError('Unable to play this stream.');
+        String userMessage = 'Unable to play this stream.';
+        if (e
+            .toString()
+            .contains('minBufferMs cannot be less than bufferForPlaybackMs')) {
+          userMessage = 'Player configuration error. Please update the app.';
+        } else if (e.toString().contains('Network')) {
+          userMessage = 'Network error. Check your internet connection.';
+        } else if (e.toString().contains('404') ||
+            e.toString().contains('not found')) {
+          userMessage = 'Stream not available.';
+        }
+
+        _handleError(userMessage);
       }
     }
   }
@@ -103,9 +123,22 @@ class VideoPlayerViewModel extends BaseViewModel {
   void _onPlayerEvent(BetterPlayerEvent event) {
     if (_isDisposed) return;
 
+    debugPrint('📺 Player event: ${event.betterPlayerEventType}');
+
+    // Clear error when playback starts successfully
+    if (event.betterPlayerEventType == BetterPlayerEventType.play || event.betterPlayerEventType == BetterPlayerEventType.progress) {
+      if (containsError) {
+        containsError = false;
+        errorMessage = null;
+        notifyListeners();
+      }
+      _bufferingTimer?.cancel();
+      return;
+    }
+
     switch (event.betterPlayerEventType) {
       case BetterPlayerEventType.bufferingStart:
-        // Start a timer — if buffering lasts too long, retry
+        debugPrint('⏳ Buffering started');
         _bufferingTimer?.cancel();
         _bufferingTimer = Timer(const Duration(seconds: 10), () {
           if (_isDisposed || _isRetrying) return;
@@ -115,70 +148,93 @@ class VideoPlayerViewModel extends BaseViewModel {
         break;
 
       case BetterPlayerEventType.bufferingEnd:
-      case BetterPlayerEventType.play:
+        debugPrint('✅ Buffering ended');
         _bufferingTimer?.cancel();
         _retryDebounce?.cancel();
         break;
 
       case BetterPlayerEventType.exception:
+        debugPrint('❌ Exception event received');
         _bufferingTimer?.cancel();
         if (!_isRetrying) {
-          _handleError('Stream playback failed.');
+          _handleError('Stream playback failed. Please try again.');
         }
         break;
 
       case BetterPlayerEventType.finished:
+        debugPrint('🏁 Stream finished');
         _bufferingTimer?.cancel();
         _handleError('Stream ended.');
         break;
 
+      case BetterPlayerEventType.initialized:
+        debugPrint('🎯 Player initialized');
+        if (containsError) {
+          containsError = false;
+          errorMessage = null;
+          notifyListeners();
+        }
+        break;
+
+      case BetterPlayerEventType.pause:
+        debugPrint('⏸️ Player paused');
+        break;
+
+      case BetterPlayerEventType.setupDataSource:
+        debugPrint('🔧 Setting up data source');
+        break;
+
       default:
+        debugPrint('📌 Unhandled event: ${event.betterPlayerEventType}');
         break;
     }
   }
 
-  // Debounced retry — prevents rapid-fire retries
   void _scheduleRetry() {
     _retryDebounce?.cancel();
     _retryDebounce = Timer(const Duration(milliseconds: 300), () {
-      if (!_isDisposed && !_isRetrying) {
+      if (!_isDisposed && !_isRetrying && !containsError) {
         retry();
       }
     });
   }
 
   Future<void> retry() async {
-    if (_isDisposed || _isRetrying) return;
+    if (_isDisposed || _isRetrying || _currentUrl == null) return;
     _isRetrying = true;
+
+    debugPrint('🔄 Retrying stream: $_currentUrl');
 
     _bufferingTimer?.cancel();
     _retryDebounce?.cancel();
 
-    // Swap out the old controller safely
-    final oldController = _controller;
-    _controller = null;
-    _isPlayerReady = false;
+    // Clear error state
     containsError = false;
     errorMessage = null;
     notifyListeners();
 
-    // Give ExoPlayer time to finish its internal cleanup before we dispose
-    await Future.delayed(const Duration(milliseconds: 800));
+    // Clean up old controller
+    final oldController = _controller;
+    _controller = null;
+    _isPlayerReady = false;
 
-    _silentDispose(oldController);
+    await _silentDispose(oldController);
 
-    // Another small gap before creating a new ExoPlayer instance
-    await Future.delayed(const Duration(milliseconds: 400));
+    // Brief delay before reinitializing
+    await Future.delayed(const Duration(milliseconds: 500));
 
     _isRetrying = false;
 
-    if (_isDisposed || _currentUrl == null) return;
+    if (_isDisposed) return;
 
     await _initializePlayer(_currentUrl!);
   }
 
   void _handleError(String message) {
-    if (_isDisposed) return;
+    if (_isDisposed || _isRetrying) return;
+
+    debugPrint('❌ Player error: $message');
+
     _bufferingTimer?.cancel();
     containsError = true;
     errorMessage = message;
@@ -186,8 +242,7 @@ class VideoPlayerViewModel extends BaseViewModel {
     notifyListeners();
   }
 
-  // Dispose a controller without touching any viewmodel state
-  void _silentDispose(BetterPlayerController? c) {
+  Future<void> _silentDispose(BetterPlayerController? c) async {
     if (c == null) return;
     try {
       c.removeEventsListener(_onPlayerEvent);
@@ -208,10 +263,11 @@ class VideoPlayerViewModel extends BaseViewModel {
     final c = _controller;
     _controller = null;
     _isPlayerReady = false;
-    _silentDispose(c);
+    await _silentDispose(c);
   }
 
   void navigateToHome() {
+    disposePlayer();
     _navigationService.replaceWithHomeView();
   }
 
