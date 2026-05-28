@@ -5,20 +5,27 @@ import 'package:mero_tv/models/channel_model.dart';
 
 @LazySingleton()
 class FavoritesService {
-  Box<ChannelModel> get _box => Hive.box<ChannelModel>('favorites');
+  Box<ChannelModel>? _box;
+
+  // Lazy initialization with caching
+  Box<ChannelModel> get _boxInstance {
+    _box ??= Hive.box<ChannelModel>('favorites');
+    return _box!;
+  }
 
   // expose listenable for reactive UI
-  ValueListenable<Box<ChannelModel>> get listenable => _box.listenable();
+  ValueListenable<Box<ChannelModel>> get listenable =>
+      _boxInstance.listenable();
 
-  List<ChannelModel> getFavorites() => _box.values.toList();
+  List<ChannelModel> getFavorites() => _boxInstance.values.toList();
 
-  bool isFavorite(ChannelModel channel) => _box.containsKey(channel.id);
+  bool isFavorite(ChannelModel channel) => _boxInstance.containsKey(channel.id);
 
   Future<void> toggleFavorite(ChannelModel channel) async {
     if (isFavorite(channel)) {
-      await _box.delete(channel.id);
+      await _boxInstance.delete(channel.id);
     } else {
-      await _box.put(channel.id, channel);
+      await _boxInstance.put(channel.id, channel);
     }
   }
 }
