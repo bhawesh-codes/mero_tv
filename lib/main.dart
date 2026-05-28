@@ -1,4 +1,5 @@
 import 'dart:ui';
+import 'package:device_preview/device_preview.dart';
 import 'package:flutter/services.dart';
 import 'package:mero_tv/models/channel_model.dart';
 import 'package:mero_tv/repository/channel_repository.dart';
@@ -17,11 +18,7 @@ import 'package:mero_tv/services/get_it_service.dart';
 import 'package:stacked_services/stacked_services.dart';
 
 Future<void> main() async {
-  // Initialize WidgetsFlutterBinding first
   WidgetsFlutterBinding.ensureInitialized();
-
-  // Add a small delay to ensure platform channels are ready
-  // await Future.delayed(const Duration(milliseconds: 100));
 
   try {
     await Firebase.initializeApp(
@@ -31,33 +28,54 @@ Future<void> main() async {
   } catch (e) {
     print('❌ Firebase initialization failed: $e');
   }
-  // Initialize Hive with error handling
+
   try {
     await Hive.initFlutter();
     print('✅ Hive initialized successfully');
 
-    // Register adapters before opening boxes
     Hive.registerAdapter(ChannelModelAdapter());
     Hive.registerAdapter(CategoryAdapter());
 
-    // Open favorite box
-    await Hive.openBox<ChannelModel>('favorites');
-    print('✅ Hive boxes opened successfully');
+    // ✅ Schema version check - FIXES YOUR CRASH
+    const currentVersion = 2;
+    final versionBox = await Hive.openBox('app_version');
+    final savedVersion =
+        versionBox.get('channel_model_version', defaultValue: 0);
+
+    if (savedVersion < currentVersion) {
+      print('⚠️ Schema version mismatch. Clearing old favorites data...');
+
+      // Safely delete old box if it exists
+      if (await Hive.boxExists('favorites')) {
+        await Hive.deleteBoxFromDisk('favorites');
+        print('✅ Old favorites box deleted');
+      }
+
+      await versionBox.put('channel_model_version', currentVersion);
+    }
+    await versionBox.close();
+
+    // Open favorite box (creates new if deleted)
+    final box = await Hive.openBox<ChannelModel>('favorites');
+    print('✅ Hive boxes opened successfully ${box.isOpen}');
+    await box.isEmpty; // Verify box is readable
   } catch (e) {
     print('❌ Hive initialization failed: $e');
-    // If Hive fails, we can continue without persistence
-    // The app will still work but favorites won't be saved
+    // Last resort recovery
+    try {
+      await Hive.deleteBoxFromDisk('favorites');
+      await Hive.openBox<ChannelModel>('favorites');
+      print('✅ Recovered from Hive error');
+    } catch (recoveryError) {
+      print('❌ Recovery failed: $recoveryError');
+    }
   }
-
-  // Initialize Firebase with error handling
-
 
   // Setup crashlytics only if Firebase initialized successfully
   if (Firebase.apps.isNotEmpty && !kDebugMode) {
     FlutterError.onError = (FlutterErrorDetails details) {
       final exception = details.exception;
 
-      // Ignore specific known errors
       if (exception is RangeError &&
           exception.message.toString().contains('millisecondsSinceEpoch')) {
         debugPrint('Caught flutter timestamp overflow (ignored): $exception');
@@ -102,7 +120,12 @@ Future<void> main() async {
     print(stack);
   }
 
-  runApp(const MainApp());
+  runApp(
+    DevicePreview(
+      enabled: !kReleaseMode,
+      builder: (context) => const MainApp(),
+    ),
+  );
 }
 
 class MainApp extends StatelessWidget {
@@ -116,6 +139,8 @@ class MainApp extends StatelessWidget {
       splitScreenMode: true,
       builder: (_, child) {
         return MaterialApp(
+          locale: DevicePreview.locale(context),
+          builder: DevicePreview.appBuilder,
           debugShowCheckedModeBanner: false,
           title: 'Mero TV',
           initialRoute: Routes.startupView,
