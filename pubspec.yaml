@@ -27,6 +27,8 @@ dependencies:
   stacked: ^3.4.0
   stacked_services: ^1.1.0
   device_preview: ^1.1.0
+  dropdown_search: ^7.0.0
+  collection: ^1.19.1
 
 dev_dependencies:
   build_runner: ^2.4.6
