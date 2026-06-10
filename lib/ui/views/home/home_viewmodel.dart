@@ -1,18 +1,22 @@
+// lib/ui/views/home/home_viewmodel.dart
 import 'package:flutter/widgets.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:mero_tv/app/app.locator.dart';
 import 'package:mero_tv/app/app.router.dart';
 import 'package:mero_tv/core/failures/failures.dart';
 import 'package:mero_tv/models/channel_model.dart';
+import 'package:mero_tv/models/country_model.dart';
 import 'package:mero_tv/models/logo_model.dart';
 import 'package:mero_tv/models/stream_model.dart';
 import 'package:mero_tv/repository/channel_repository.dart';
+import 'package:mero_tv/repository/geo_repository.dart';
 import 'package:mero_tv/ui/views/favorites/services/favorites_service.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
 
 class HomeViewModel extends BaseViewModel {
   final ChannelRepository _repository = locator<ChannelRepository>();
+  final GeoRepository _geoRepository = locator<GeoRepository>();
   final _navigationService = locator<NavigationService>();
   final FavoritesService _favoritesService = locator<FavoritesService>();
   final TextEditingController searchController = TextEditingController();
@@ -25,22 +29,35 @@ class HomeViewModel extends BaseViewModel {
   String _searchQuery = '';
   String _selectedCategory = 'All';
   String get selectedCategory => _selectedCategory;
+
+  // ── Country dropdown state ────────────────────────────────────────────────
+
+  /// null means "All" (no filter)
   String? _selectedCountry;
   String? get selectedCountry => _selectedCountry;
 
-  // Static variables - shared across all instances
+  List<CountryModel> _dropdownCountries = [];
+  List<CountryModel> get dropdownCountries => _dropdownCountries;
+
+  String? _userCountryCode;
+  String? get userCountryCode => _userCountryCode;
+
+  // ── Channel cache ─────────────────────────────────────────────────────────
+
   static bool _dataLoaded = false;
   static List<ChannelModel> _cachedChannels = [];
-
   List<ChannelModel> _matchedChannels = [];
 
+  // ── Filtered channel list ─────────────────────────────────────────────────
+
   List<ChannelModel> get channelList {
-    // Use cached channels if available, otherwise use matched channels
     List<ChannelModel> filtered =
         _cachedChannels.isNotEmpty ? _cachedChannels : _matchedChannels;
 
     if (_selectedCountry != null) {
-      filtered = filtered.where((c) => c.country == _selectedCountry).toList();
+      filtered = filtered
+          .where((c) => c.country?.toUpperCase() == _selectedCountry)
+          .toList();
     }
 
     if (_selectedCategory != 'All') {
@@ -64,6 +81,61 @@ class HomeViewModel extends BaseViewModel {
     return filtered;
   }
 
+  // ── Init ──────────────────────────────────────────────────────────────────
+
+  Future<void> init() async {
+    await Future.wait([
+      fetchChannelData(),
+      fetchCountries(),
+    ]);
+  }
+
+  // ── Country methods ───────────────────────────────────────────────────────
+
+  Future<void> fetchCountries() async {
+    final results = await Future.wait([
+      _geoRepository.getUserCountryCode(),
+      _repository.getCountries(),
+    ]);
+
+    final geoResult = results[0] as Either<Failure, String>;
+    final countriesResult = results[1] as Either<Failure, List<CountryModel>>;
+
+    geoResult.fold(
+      (failure) => debugPrint('Geo fetch failed: ${failure.message}'),
+      (code) => _userCountryCode = code,
+    );
+
+    countriesResult.fold(
+      (failure) => debugPrint('Countries fetch failed: ${failure.message}'),
+      (countries) {
+        final sorted = List<CountryModel>.from(countries)
+          ..sort((a, b) => (a.name ?? '').compareTo(b.name ?? ''));
+
+        if (_userCountryCode != null) {
+          final userCountry = sorted
+              .where((c) => c.code?.toUpperCase() == _userCountryCode)
+              .toList();
+          final rest = sorted
+              .where((c) => c.code?.toUpperCase() != _userCountryCode)
+              .toList();
+          _dropdownCountries = [...userCountry, ...rest];
+        } else {
+          _dropdownCountries = sorted;
+        }
+      },
+    );
+
+    notifyListeners();
+  }
+
+  void onCountryChanged(String? countryCode) {
+    _selectedCountry = countryCode;
+    notifyListeners();
+  }
+
+  // ── Category / search ─────────────────────────────────────────────────────
+
   void onCategoryChanged(String value) {
     _selectedCategory = value;
     notifyListeners();
@@ -83,8 +155,9 @@ class HomeViewModel extends BaseViewModel {
     notifyListeners();
   }
 
+  // ── Channel fetch ─────────────────────────────────────────────────────────
+
   Future<void> fetchChannelData() async {
-    // Check static flag
     if (_dataLoaded && _cachedChannels.isNotEmpty) {
       _matchedChannels = _cachedChannels;
       notifyListeners();
@@ -95,7 +168,6 @@ class HomeViewModel extends BaseViewModel {
     errorMessage = null;
     notifyListeners();
 
-    // ── Fetch all three APIs concurrently ─────────────────────────────────
     final results = await Future.wait([
       _repository.getChannels(),
       _repository.getLogos(),
@@ -106,7 +178,6 @@ class HomeViewModel extends BaseViewModel {
     final logosResult = results[1] as Either<Failure, List<LogoModel>>;
     final streamsResult = results[2] as Either<Failure, List<StreamModel>>;
 
-    // ── Unwrap channels (fatal) ───────────────────────────────────────────
     List<ChannelModel> channels = [];
     channelResult.fold(
       (failure) => errorMessage = failure.message,
@@ -119,7 +190,6 @@ class HomeViewModel extends BaseViewModel {
       return;
     }
 
-    // ── Unwrap logos → Map<channelId, logoUrl> ────────────────────────────
     Map<String, String?> logoMap = {};
     logosResult.fold(
       (failure) => debugPrint('Logo fetch failed: ${failure.message}'),
@@ -132,7 +202,6 @@ class HomeViewModel extends BaseViewModel {
       },
     );
 
-    // ── Unwrap streams → Map<channelId, streamUrl> ────────────────────────
     Map<String, String?> streamMap = {};
     streamsResult.fold(
       (failure) => debugPrint('Stream fetch failed: ${failure.message}'),
@@ -145,7 +214,6 @@ class HomeViewModel extends BaseViewModel {
       },
     );
 
-    // ── Three-way join: channel.id == logo.channel == stream.channel ──────
     _matchedChannels = channels
         .where((c) => logoMap.containsKey(c.id) && streamMap.containsKey(c.id))
         .map((c) => c.copyWith(
@@ -154,7 +222,6 @@ class HomeViewModel extends BaseViewModel {
             ))
         .toList();
 
-    // Store in static cache
     _cachedChannels = _matchedChannels;
     _dataLoaded = true;
 
@@ -164,18 +231,13 @@ class HomeViewModel extends BaseViewModel {
 
   Future<void> retry() => fetchChannelData();
 
-  // Optional: Add refresh method if you need to manually reload data
   Future<void> refreshData() async {
     _dataLoaded = false;
     _cachedChannels = [];
     await fetchChannelData();
   }
-  
-  void onCountryChanged(String? countryCode) {
-    // toggle off if same country tapped again
-    _selectedCountry = _selectedCountry == countryCode ? null : countryCode;
-    notifyListeners();
-  }
+
+  // ── Favorites ─────────────────────────────────────────────────────────────
 
   bool isFavorite(ChannelModel channel) =>
       _favoritesService.isFavorite(channel);
@@ -185,6 +247,11 @@ class HomeViewModel extends BaseViewModel {
     notifyListeners();
   }
 
+  List<ChannelModel> get favoriteChannels =>
+      _cachedChannels.where((c) => _favoritesService.isFavorite(c)).toList();
+
+  // ── Navigation ────────────────────────────────────────────────────────────
+
   void navigateToPlayer(ChannelModel channel) {
     if (channel.streamUrl == null) return;
     _navigationService.navigateToVideoPlayerView(
@@ -192,23 +259,13 @@ class HomeViewModel extends BaseViewModel {
       title: channel.name ?? '',
     );
   }
-  bool showAllCountries = false;
-  bool showAllCategories = false;
 
-  void toggleCountriesExpand() {
-    showAllCountries = !showAllCountries;
-    notifyListeners();
-  }
+  // ── Categories expand ─────────────────────────────────────────────────────
+
+  bool showAllCategories = false;
 
   void toggleCategoriesExpand() {
     showAllCategories = !showAllCategories;
     notifyListeners();
-  }
-
-// Keep this getter for favorites (if needed elsewhere)
-  List<ChannelModel> get favoriteChannels {
-    return _cachedChannels
-        .where((c) => _favoritesService.isFavorite(c))
-        .toList();
   }
 }
