@@ -1,3 +1,4 @@
+// lib/services/dio_service/dio_module.dart
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import 'package:mero_tv/core/const/api_url.dart';
@@ -17,5 +18,17 @@ abstract class DioModule {
     );
     dio.interceptors.add(DioInterceptor());
     return dio;
+  }
+
+  @lazySingleton
+  @Named('geoDio')
+  Dio get geoDio {
+    return Dio(
+      BaseOptions(
+        baseUrl: ApiUrl.geoBaseUrl,
+        connectTimeout: const Duration(seconds: 10),
+        receiveTimeout: const Duration(seconds: 10),
+      ),
+    );
   }
 }
