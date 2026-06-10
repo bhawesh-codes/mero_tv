@@ -1,6 +1,8 @@
+// lib/services/api_service.dart
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 import 'package:mero_tv/models/channel_model.dart';
+import 'package:mero_tv/models/country_model.dart';
 import 'package:mero_tv/models/logo_model.dart';
 import 'package:mero_tv/models/stream_model.dart';
 import 'package:retrofit/retrofit.dart';
@@ -21,4 +23,7 @@ abstract class ApiService {
 
   @GET('streams.json')
   Future<List<StreamModel>> getStreams();
+
+  @GET('countries.json')
+  Future<List<CountryModel>> getCountries();
 }
