@@ -1,4 +1,4 @@
-// home_view.dart
+// lib/ui/views/home/home_view.dart
 import 'package:flutter/material.dart';
 import 'package:mero_tv/ui/common/app_colors.dart';
 import 'package:stacked/stacked.dart';
@@ -20,5 +20,5 @@ class HomeView extends StackedView<HomeViewModel> {
 
   @override
   HomeViewModel viewModelBuilder(BuildContext context) =>
-      HomeViewModel()..fetchChannelData();
+      HomeViewModel()..init();
 }
