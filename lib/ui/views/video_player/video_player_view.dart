@@ -1,4 +1,3 @@
-
 import 'package:better_player_enhanced/better_player.dart';
 import 'package:flutter/material.dart';
 import 'package:mero_tv/ui/common/app_colors.dart';
@@ -19,27 +18,21 @@ class VideoPlayerView extends StatelessWidget {
   Widget build(BuildContext context) {
     return ViewModelBuilder<VideoPlayerViewModel>.reactive(
       viewModelBuilder: () => VideoPlayerViewModel(),
-
       onViewModelReady: (viewModel) {
         viewModel.init(streamUrl);
       },
-
       disposeViewModel: true,
-
       builder: (context, viewModel, child) {
         return WillPopScope(
           onWillPop: () async {
             await viewModel.disposePlayer();
             return true;
           },
-
           child: Scaffold(
             backgroundColor: Colors.black,
-
             appBar: AppBar(
               backgroundColor: Colors.black,
               elevation: 0,
-
               title: Text(
                 title,
                 style: const TextStyle(
@@ -48,13 +41,11 @@ class VideoPlayerView extends StatelessWidget {
                 ),
                 overflow: TextOverflow.ellipsis,
               ),
-
               leading: IconButton(
                 icon: const Icon(
                   Icons.arrow_back,
                   color: Colors.white,
                 ),
-
                 onPressed: () async {
                   await viewModel.disposePlayer();
 
@@ -64,7 +55,6 @@ class VideoPlayerView extends StatelessWidget {
                 },
               ),
             ),
-
             body: _buildBody(viewModel),
           ),
         );
@@ -77,39 +67,33 @@ class VideoPlayerView extends StatelessWidget {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
-
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
-
             children: [
               const Icon(
                 Icons.error_outline,
                 color: Colors.red,
                 size: 70,
               ),
-
               const SizedBox(height: 20),
-
               Text(
-                viewModel.errorMessage ??
-                    'Unable to play this stream.',
+                viewModel.errorMessage ?? 'Unable to play this stream.',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 16,
                 ),
                 textAlign: TextAlign.center,
               ),
-
               const SizedBox(height: 30),
-
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: kcPrimaryColor,
                 ),
-
-                onPressed: viewModel.navigateToHome,
-
-                child: const Text('Go Back', style: TextStyle(color: kcPrimaryTextColor),),
+                onPressed: viewModel.navigateBack,
+                child: const Text(
+                  'Go Back',
+                  style: TextStyle(color: kcPrimaryTextColor),
+                ),
               ),
             ],
           ),
@@ -117,8 +101,7 @@ class VideoPlayerView extends StatelessWidget {
       );
     }
 
-    if (viewModel.isPlayerReady &&
-        viewModel.controller != null) {
+    if (viewModel.isPlayerReady && viewModel.controller != null) {
       return SizedBox.expand(
         child: BetterPlayer(
           controller: viewModel.controller!,
@@ -129,14 +112,11 @@ class VideoPlayerView extends StatelessWidget {
     return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-
         children: [
           CircularProgressIndicator(
             color: kcPrimaryColor,
           ),
-
           SizedBox(height: 20),
-
           Text(
             'Loading stream...',
             style: TextStyle(
