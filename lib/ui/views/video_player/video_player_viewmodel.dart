@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:better_player_enhanced/better_player.dart';
 import 'package:flutter/material.dart';
 import 'package:mero_tv/app/app.locator.dart';
-import 'package:mero_tv/app/app.router.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
 
@@ -266,9 +265,9 @@ class VideoPlayerViewModel extends BaseViewModel {
     await _silentDispose(c);
   }
 
-  void navigateToHome() {
+  void navigateBack() {
     disposePlayer();
-    _navigationService.replaceWithHomeView();
+    _navigationService.back();
   }
 
   @override
