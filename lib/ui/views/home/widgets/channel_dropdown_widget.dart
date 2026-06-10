@@ -101,7 +101,7 @@ class CountryDropdownWidget extends ViewModelWidget<HomeViewModel> {
           showSearchBox: true,
           // Full width — no maxWidth cap, tight fit stretches to button width
           fit: FlexFit.tight,
-          constraints: BoxConstraints(maxHeight: 400.h, minHeight: 300.h),
+          constraints: BoxConstraints(maxHeight: 300.h),
           menuProps: MenuProps(
             backgroundColor: kcDisabledTextColor,
             margin: EdgeInsets.zero,
@@ -111,7 +111,7 @@ class CountryDropdownWidget extends ViewModelWidget<HomeViewModel> {
           ),
           // ── Search field styled to look like the button ─────────────────
           searchFieldProps: TextFieldProps(
-            autofocus: true,
+            autofocus: false,
             style: bodySmall.copyWith(color: kcPrimaryTextColor),
             decoration: InputDecoration(
               isDense: true,
