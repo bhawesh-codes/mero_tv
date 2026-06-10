@@ -13,9 +13,11 @@ import 'package:get_it/get_it.dart' as _i174;
 import 'package:injectable/injectable.dart' as _i526;
 
 import '../repository/channel_repository.dart' as _i1030;
+import '../repository/geo_repository.dart' as _i174;
 import '../ui/views/favorites/services/favorites_service.dart' as _i166;
 import 'api_service.dart' as _i738;
 import 'dio_service/dio_module.dart' as _i642;
+import 'geo_service.dart' as _i926;
 
 // initializes the registration of main-scope dependencies inside of GetIt
 _i174.GetIt init(
@@ -32,8 +34,16 @@ _i174.GetIt init(
   gh.lazySingleton<_i361.Dio>(() => dioModule.dio);
   gh.lazySingleton<_i166.FavoritesService>(() => _i166.FavoritesService());
   gh.lazySingleton<_i738.ApiService>(() => _i738.ApiService(gh<_i361.Dio>()));
+  gh.lazySingleton<_i361.Dio>(
+    () => dioModule.geoDio,
+    instanceName: 'geoDio',
+  );
   gh.lazySingleton<_i1030.ChannelRepository>(
       () => _i1030.ChannelRepository(gh<_i738.ApiService>()));
+  gh.lazySingleton<_i926.GeoService>(
+      () => _i926.GeoService(gh<_i361.Dio>(instanceName: 'geoDio')));
+  gh.lazySingleton<_i174.GeoRepository>(
+      () => _i174.GeoRepository(gh<_i926.GeoService>()));
   return getIt;
 }
 
