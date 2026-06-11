@@ -11,6 +11,7 @@ import io.flutter.plugin.common.MethodChannel
 class MainActivity : FlutterActivity() {
     private val PIP_CHANNEL = "mero_tv/pip"
     private var pipMethodChannel: MethodChannel? = null
+    private var pipEnabled = false  // only true while streaming
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
@@ -30,12 +31,12 @@ class MainActivity : FlutterActivity() {
                         enterPictureInPictureMode(params)
                         result.success(true)
                     } else {
-                        result.error(
-                            "UNSUPPORTED",
-                            "PiP not supported on this Android version",
-                            null
-                        )
+                        result.error("UNSUPPORTED", "PiP not supported", null)
                     }
+                }
+                "setPipEnabled" -> {
+                    pipEnabled = call.arguments as Boolean
+                    result.success(true)
                 }
                 else -> result.notImplemented()
             }
@@ -45,7 +46,7 @@ class MainActivity : FlutterActivity() {
     // Fires ONLY on home button press, not notification drawer
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (pipEnabled && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val params = PictureInPictureParams.Builder()
                 .setAspectRatio(Rational(16, 9))
                 .build()
