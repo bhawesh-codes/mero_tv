@@ -47,21 +47,31 @@ class FavoriteCard extends StatelessWidget {
   }
 
   Widget _buildChannelLogo() {
-    return ClipOval(
-      clipBehavior: Clip.antiAlias,
-      child: channel.logoUrl != null
-          ? Image.network(
-              channel.logoUrl!,
-              width: 60.r,
-              height: 60.r,
-              fit: BoxFit.fill,
-              errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return _buildLoadingPlaceholder();
-              },
-            )
-          : _buildPlaceholder(),
+    return Container(
+      width: 64.r,
+      height: 64.r,
+      padding: EdgeInsets.all(1.5.r), // space for border
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: kcDisabledTextColor,
+          width: 2,
+        ),
+      ),
+      child: ClipOval(
+        child: channel.logoUrl != null
+            ? Image.network(
+                channel.logoUrl!,
+                fit: BoxFit.contain,
+                errorBuilder: (context, error, stackTrace) =>
+                    _buildPlaceholder(),
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return _buildLoadingPlaceholder();
+                },
+              )
+            : _buildPlaceholder(),
+      ),
     );
   }
 
