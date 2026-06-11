@@ -24,14 +24,14 @@ Future<void> main() async {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
-    print('✅ Firebase initialized successfully');
+    debugPrint('✅ Firebase initialized successfully');
   } catch (e) {
-    print('❌ Firebase initialization failed: $e');
+    debugPrint('❌ Firebase initialization failed: $e');
   }
 
   try {
     await Hive.initFlutter();
-    print('✅ Hive initialized successfully');
+    debugPrint('✅ Hive initialized successfully');
 
     Hive.registerAdapter(ChannelModelAdapter());
     Hive.registerAdapter(CategoryAdapter());
@@ -43,12 +43,12 @@ Future<void> main() async {
         versionBox.get('channel_model_version', defaultValue: 0);
 
     if (savedVersion < currentVersion) {
-      print('⚠️ Schema version mismatch. Clearing old favorites data...');
+      debugPrint('⚠️ Schema version mismatch. Clearing old favorites data...');
 
       // Safely delete old box if it exists
       if (await Hive.boxExists('favorites')) {
         await Hive.deleteBoxFromDisk('favorites');
-        print('✅ Old favorites box deleted');
+        debugPrint('✅ Old favorites box deleted');
       }
 
       await versionBox.put('channel_model_version', currentVersion);
@@ -57,17 +57,17 @@ Future<void> main() async {
 
     // Open favorite box (creates new if deleted)
     final box = await Hive.openBox<ChannelModel>('favorites');
-    print('✅ Hive boxes opened successfully ${box.isOpen}');
-    await box.isEmpty; // Verify box is readable
+    debugPrint('✅ Hive boxes opened successfully ${box.isOpen}');
+    box.isEmpty; // Verify box is readable
   } catch (e) {
-    print('❌ Hive initialization failed: $e');
+    debugPrint('❌ Hive initialization failed: $e');
     // Last resort recovery
     try {
       await Hive.deleteBoxFromDisk('favorites');
       await Hive.openBox<ChannelModel>('favorites');
-      print('✅ Recovered from Hive error');
+      debugPrint('✅ Recovered from Hive error');
     } catch (recoveryError) {
-      print('❌ Recovery failed: $recoveryError');
+      debugPrint('❌ Recovery failed: $recoveryError');
     }
   }
 
@@ -112,12 +112,12 @@ Future<void> main() async {
 
   try {
     await configureDependencies();
-    print('✅ Dependencies configured successfully');
-    print(
+    debugPrint('✅ Dependencies configured successfully');
+    debugPrint(
         'IsRegistered ChannelRepository: ${locator.isRegistered<ChannelRepository>()}');
   } catch (e, stack) {
-    print('❌ configureDependencies FAILED: $e');
-    print(stack);
+    debugPrint('❌ configureDependencies FAILED: $e');
+    debugPrint(stack.toString());
   }
 
   runApp(
