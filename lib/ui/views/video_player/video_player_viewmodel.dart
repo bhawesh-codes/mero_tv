@@ -59,12 +59,25 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (_controller == null || _isDisposed) return;
-    if (state == AppLifecycleState.resumed) {
+
+    if (state == AppLifecycleState.inactive) {
+      // Wait 600ms — notification drawer resumes before timer fires,
+      // home button press stays inactive long enough to trigger PiP
+      _pipTriggerTimer?.cancel();
+      _pipTriggerTimer = Timer(const Duration(milliseconds: 600), () {
+        if (!_isDisposed && !_isInPip) {
+          enablePip();
+        }
+      });
+    } else if (state == AppLifecycleState.resumed) {
+      // Cancel PiP trigger — user just pulled notification drawer
+      _pipTriggerTimer?.cancel();
       _isInPip = false;
       _controller!.play();
       notifyListeners();
-    } else if (state == AppLifecycleState.paused && !_isInPip) {
-      _controller!.pause();
+    } else if (state == AppLifecycleState.paused) {
+      // App fully backgrounded without PiP
+      _pipTriggerTimer?.cancel();
     }
   }
 
@@ -149,6 +162,8 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
       _isPlayerReady = true;
       containsError = false;
       errorMessage = null;
+      // Enable auto PiP on home press now that stream is playing
+      await _pipChannel.invokeMethod('setPipEnabled', true);
       notifyListeners();
 
       debugPrint('✅ Player initialized successfully for: $url');
@@ -305,6 +320,10 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
     if (_isDisposed) return;
     _isDisposed = true;
     await WakelockPlus.disable();
+    // Disable auto PiP so home button works normally after leaving player
+    try {
+      await _pipChannel.invokeMethod('setPipEnabled', false);
+    } catch (_) {}
     _pipTriggerTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _pipChannel.setMethodCallHandler(null);
