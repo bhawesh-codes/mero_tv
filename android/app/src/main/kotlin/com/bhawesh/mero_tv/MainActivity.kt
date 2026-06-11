@@ -42,6 +42,17 @@ class MainActivity : FlutterActivity() {
         }
     }
 
+    // Fires ONLY on home button press, not notification drawer
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val params = PictureInPictureParams.Builder()
+                .setAspectRatio(Rational(16, 9))
+                .build()
+            enterPictureInPictureMode(params)
+        }
+    }
+
     // Notify Flutter when PiP mode changes so it can hide/show UI
     override fun onPictureInPictureModeChanged(
         isInPictureInPictureMode: Boolean,
