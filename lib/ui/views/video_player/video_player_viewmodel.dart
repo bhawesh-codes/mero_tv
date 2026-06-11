@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:mero_tv/app/app.locator.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
   final _navigationService = locator<NavigationService>();
@@ -24,6 +25,7 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
   String? _currentUrl;
   Timer? _bufferingTimer;
   Timer? _retryDebounce;
+  Timer? _pipTriggerTimer;
 
   bool get isPlayerReady =>
       _isPlayerReady && _controller != null && !containsError;
@@ -31,13 +33,17 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
 
   Future<void> init(String url) async {
     _currentUrl = url;
+    await WakelockPlus.enable();
     WidgetsBinding.instance.addObserver(this);
-    // Listen for PiP state changes from native
     _pipChannel.setMethodCallHandler(_handleNativeMethod);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (_isDisposed) return;
       await _initializePlayer(url);
     });
+  }
+
+  void setBetterPlayerKey(GlobalKey key) {
+    _betterPlayerKey = key;
   }
 
   Future<dynamic> _handleNativeMethod(MethodCall call) async {
@@ -49,23 +55,20 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
     }
   }
 
-  void setBetterPlayerKey(GlobalKey key) {
-    _betterPlayerKey = key;
-  }
-
+  // ── Lifecycle ──────────────────────────────────────────────────────────────
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (_controller == null || _isDisposed) return;
-    if (state == AppLifecycleState.inactive) {
-      // Home button pressed — trigger PiP
-      enablePip();
-    } else if (state == AppLifecycleState.resumed) {
+    if (state == AppLifecycleState.resumed) {
       _isInPip = false;
       _controller!.play();
       notifyListeners();
+    } else if (state == AppLifecycleState.paused && !_isInPip) {
+      _controller!.pause();
     }
   }
 
+  // ── Manual PiP trigger ─────────────────────────────────────────────────────
   Future<void> enablePip() async {
     if (_controller == null || _betterPlayerKey == null) {
       debugPrint('⚠️ PiP: controller or key is null');
@@ -301,6 +304,8 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
   Future<void> disposePlayer() async {
     if (_isDisposed) return;
     _isDisposed = true;
+    await WakelockPlus.disable();
+    _pipTriggerTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _pipChannel.setMethodCallHandler(null);
     _bufferingTimer?.cancel();
