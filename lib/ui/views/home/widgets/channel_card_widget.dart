@@ -1,4 +1,5 @@
 // widgets/channel_card.dart
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:mero_tv/models/channel_model.dart';
@@ -51,21 +52,35 @@ class ChannelCard extends StatelessWidget {
   }
 
   Widget _buildChannelLogo() {
-    return ClipOval(
-      clipBehavior: Clip.antiAlias,
-      child: logoUrl != null
-          ? Image.network(
-              logoUrl!,
-              width: 60.r,
-              height: 60.r,
-              fit: BoxFit.fill,
-              errorBuilder: (context, error, stackTrace) => _buildPlaceholder(),
-              loadingBuilder: (context, child, loadingProgress) {
-                if (loadingProgress == null) return child;
-                return _buildLoadingPlaceholder();
-              },
-            )
-          : _buildPlaceholder(),
+    return Container(
+      width: 64.r,
+      height: 64.r,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: kcDisabledTextColor,
+          width: 2,
+        ),
+      ),
+      child: ClipOval(
+        child: Container(
+          // color: const Color.fromARGB(255, 101, 101,
+          // 103), // optional, makes transparent logos look better
+          // padding: EdgeInsets.all(2.r),
+          child: logoUrl != null
+              ? Image.network(
+                  logoUrl!,
+                  fit: BoxFit.contain,
+                  errorBuilder: (context, error, stackTrace) =>
+                      _buildPlaceholder(),
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return _buildLoadingPlaceholder();
+                  },
+                )
+              : _buildPlaceholder(),
+        ),
+      ),
     );
   }
 
