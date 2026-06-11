@@ -1,34 +1,82 @@
 import 'dart:async';
 import 'package:better_player_enhanced/better_player.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:mero_tv/app/app.locator.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
 
-class VideoPlayerViewModel extends BaseViewModel {
+class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
   final _navigationService = locator<NavigationService>();
+  static const _pipChannel = MethodChannel('mero_tv/pip');
 
   BetterPlayerController? _controller;
   BetterPlayerController? get controller => _controller;
+
+  GlobalKey? _betterPlayerKey;
 
   bool containsError = false;
   String? errorMessage;
   bool _isDisposed = false;
   bool _isPlayerReady = false;
   bool _isRetrying = false;
+  bool _isInPip = false;
   String? _currentUrl;
   Timer? _bufferingTimer;
   Timer? _retryDebounce;
 
   bool get isPlayerReady =>
       _isPlayerReady && _controller != null && !containsError;
+  bool get isInPip => _isInPip;
 
   Future<void> init(String url) async {
     _currentUrl = url;
+    WidgetsBinding.instance.addObserver(this);
+    // Listen for PiP state changes from native
+    _pipChannel.setMethodCallHandler(_handleNativeMethod);
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       if (_isDisposed) return;
       await _initializePlayer(url);
     });
+  }
+
+  Future<dynamic> _handleNativeMethod(MethodCall call) async {
+    if (call.method == 'onPipChanged') {
+      final bool isInPip = call.arguments['isInPip'] as bool;
+      _isInPip = isInPip;
+      notifyListeners();
+      debugPrint('📱 PiP state changed: isInPip=$isInPip');
+    }
+  }
+
+  void setBetterPlayerKey(GlobalKey key) {
+    _betterPlayerKey = key;
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (_controller == null || _isDisposed) return;
+    if (state == AppLifecycleState.inactive) {
+      // Home button pressed — trigger PiP
+      enablePip();
+    } else if (state == AppLifecycleState.resumed) {
+      _isInPip = false;
+      _controller!.play();
+      notifyListeners();
+    }
+  }
+
+  Future<void> enablePip() async {
+    if (_controller == null || _betterPlayerKey == null) {
+      debugPrint('⚠️ PiP: controller or key is null');
+      return;
+    }
+    try {
+      debugPrint('📺 Enabling native PiP');
+      await _pipChannel.invokeMethod('enterPip');
+    } catch (e) {
+      debugPrint('⚠️ Native PiP failed: $e');
+    }
   }
 
   Future<void> _initializePlayer(String url) async {
@@ -41,11 +89,10 @@ class VideoPlayerViewModel extends BaseViewModel {
         liveStream: true,
         videoExtension: 'm3u8',
         bufferingConfiguration: const BetterPlayerBufferingConfiguration(
-          minBufferMs: 10000, // Changed from 1500 to 5000
+          minBufferMs: 10000,
           maxBufferMs: 15000,
           bufferForPlaybackMs: 1500,
-          bufferForPlaybackAfterRebufferMs:
-              10000, // This is now equal to minBufferMs (allowed)
+          bufferForPlaybackAfterRebufferMs: 10000,
         ),
         cacheConfiguration: const BetterPlayerCacheConfiguration(
           useCache: false,
@@ -62,27 +109,32 @@ class VideoPlayerViewModel extends BaseViewModel {
       final controller = BetterPlayerController(
         const BetterPlayerConfiguration(
           autoPlay: true,
-          fit: BoxFit.cover,
-          handleLifecycle: false,
-          autoDispose: false,
+          fit: BoxFit.contain,
+          handleLifecycle: true,
+          autoDispose: true,
           allowedScreenSleep: false,
           fullScreenByDefault: false,
           useRootNavigator: true,
           placeholderOnTop: false,
           showPlaceholderUntilPlay: false,
           controlsConfiguration: BetterPlayerControlsConfiguration(
+            enablePip: false,
             enableFullscreen: true,
             enableMute: true,
             enablePlayPause: true,
             enableProgressBar: false,
             enableSkips: false,
+            showControlsOnInitialize: false,
+            controlBarColor: Color.fromARGB(56, 0, 0, 0),
+            iconsColor: Colors.white,
+            textColor: Colors.white,
+            liveTextColor: Colors.red,
+            loadingColor: Colors.white,
           ),
         ),
       );
 
-      // Add listener BEFORE setting up data source
       controller.addEventsListener(_onPlayerEvent);
-
       await controller.setupDataSource(dataSource);
 
       if (_isDisposed) {
@@ -113,7 +165,6 @@ class VideoPlayerViewModel extends BaseViewModel {
             e.toString().contains('not found')) {
           userMessage = 'Stream not available.';
         }
-
         _handleError(userMessage);
       }
     }
@@ -124,8 +175,8 @@ class VideoPlayerViewModel extends BaseViewModel {
 
     debugPrint('📺 Player event: ${event.betterPlayerEventType}');
 
-    // Clear error when playback starts successfully
-    if (event.betterPlayerEventType == BetterPlayerEventType.play || event.betterPlayerEventType == BetterPlayerEventType.progress) {
+    if (event.betterPlayerEventType == BetterPlayerEventType.play ||
+        event.betterPlayerEventType == BetterPlayerEventType.progress) {
       if (containsError) {
         containsError = false;
         errorMessage = null;
@@ -207,23 +258,18 @@ class VideoPlayerViewModel extends BaseViewModel {
     _bufferingTimer?.cancel();
     _retryDebounce?.cancel();
 
-    // Clear error state
     containsError = false;
     errorMessage = null;
     notifyListeners();
 
-    // Clean up old controller
     final oldController = _controller;
     _controller = null;
     _isPlayerReady = false;
 
     await _silentDispose(oldController);
-
-    // Brief delay before reinitializing
     await Future.delayed(const Duration(milliseconds: 500));
 
     _isRetrying = false;
-
     if (_isDisposed) return;
 
     await _initializePlayer(_currentUrl!);
@@ -231,9 +277,7 @@ class VideoPlayerViewModel extends BaseViewModel {
 
   void _handleError(String message) {
     if (_isDisposed || _isRetrying) return;
-
     debugPrint('❌ Player error: $message');
-
     _bufferingTimer?.cancel();
     containsError = true;
     errorMessage = message;
@@ -257,6 +301,8 @@ class VideoPlayerViewModel extends BaseViewModel {
   Future<void> disposePlayer() async {
     if (_isDisposed) return;
     _isDisposed = true;
+    WidgetsBinding.instance.removeObserver(this);
+    _pipChannel.setMethodCallHandler(null);
     _bufferingTimer?.cancel();
     _retryDebounce?.cancel();
     final c = _controller;
