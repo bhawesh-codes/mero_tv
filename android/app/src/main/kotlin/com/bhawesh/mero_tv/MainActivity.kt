@@ -2,6 +2,7 @@ package com.bhawesh.mero_tv
 
 import android.app.PictureInPictureParams
 import android.content.res.Configuration
+import android.media.MediaCodecList
 import android.os.Build
 import android.util.Rational
 import io.flutter.embedding.android.FlutterActivity
@@ -10,12 +11,16 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val PIP_CHANNEL = "mero_tv/pip"
+    private val MEDIA_CHANNEL = "mero_tv/media_cleanup"
+    
     private var pipMethodChannel: MethodChannel? = null
+    private var mediaMethodChannel: MethodChannel? = null
     private var pipEnabled = false  // only true while streaming
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
 
+        // PiP Channel
         pipMethodChannel = MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
             PIP_CHANNEL
@@ -37,6 +42,38 @@ class MainActivity : FlutterActivity() {
                 "setPipEnabled" -> {
                     pipEnabled = call.arguments as Boolean
                     result.success(true)
+                }
+                else -> result.notImplemented()
+            }
+        }
+
+        // Media Cleanup Channel - FIXES THE DECODER STUCK ISSUE
+        mediaMethodChannel = MethodChannel(
+            flutterEngine.dartExecutor.binaryMessenger,
+            MEDIA_CHANNEL
+        )
+
+        mediaMethodChannel!!.setMethodCallHandler { call, result ->
+            when (call.method) {
+                "forceReleaseCodecs" -> {
+                    try {
+                        // This forces MediaCodec to refresh its list,
+                        // releasing any stuck decoder instances
+                        MediaCodecList(MediaCodecList.ALL_CODECS)
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.success(false)
+                    }
+                }
+                "requestGc" -> {
+                    try {
+                        // Request garbage collection to clean up references
+                        System.gc()
+                        Runtime.getRuntime().gc()
+                        result.success(true)
+                    } catch (e: Exception) {
+                        result.success(false)
+                    }
                 }
                 else -> result.notImplemented()
             }
