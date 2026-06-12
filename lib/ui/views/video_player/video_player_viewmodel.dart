@@ -34,6 +34,13 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
   Timer? _retryDebounce;
   Timer? _pipTriggerTimer;
   Timer? _loadTimeoutTimer;
+  Timer? _channelSwitchDebounce;
+
+  // Simple cooldown lock - prevents rapid controller churn
+  bool _channelChangeLocked = false;
+
+  // Load token prevents stale loads from winning races
+  int _loadToken = 0;
 
   // Local copy from service so we don't mutate the service mid-session
   late List<ChannelModel> _channelList;
@@ -69,7 +76,6 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
 
   Future<void> init(String url) async {
     _currentUrl = url;
-    // Pull channel list from shared service
     _channelList = List.from(_channelPlayerService.channelList);
     _currentIndex = _channelPlayerService.currentIndex;
 
@@ -86,29 +92,62 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
     _betterPlayerKey = key;
   }
 
-  // ── Channel switching ──────────────────────────────────────────────────────
+  // ── Channel switching with DEBOUNCE + COOLDOWN ─────────────────────────────
 
   Future<void> switchToNext() async {
-    if (_channelList.isEmpty || _isSwitching) return;
+    if (_channelList.isEmpty) return;
     final nextIndex = _currentIndex + 1;
     if (nextIndex >= _channelList.length) return;
-    await _switchToIndex(nextIndex);
+    _queueSwitchToIndex(nextIndex);
   }
 
   Future<void> switchToPrevious() async {
-    if (_channelList.isEmpty || _isSwitching) return;
+    if (_channelList.isEmpty) return;
     final prevIndex = _currentIndex - 1;
     if (prevIndex < 0) return;
-    await _switchToIndex(prevIndex);
+    _queueSwitchToIndex(prevIndex);
   }
 
-  Future<void> _switchToIndex(int index) async {
-    if (_isDisposed || _isSwitching) return;
+  void _queueSwitchToIndex(int index) {
+    if (_isDisposed) return;
+
+    // Debounce: cancel previous pending switch
+    _channelSwitchDebounce?.cancel();
+
+    // Update UI immediately for responsive feel
+    _currentIndex = index;
+    notifyListeners();
+
+    // Wait 600ms, then execute if no newer swipe came in
+    _channelSwitchDebounce = Timer(
+      const Duration(milliseconds: 600),
+      () {
+        if (_isDisposed) return;
+        _executeSwitchToIndex(index);
+      },
+    );
+  }
+
+  Future<void> _executeSwitchToIndex(int index) async {
+    // Cooldown check - prevents rapid controller churn
+    if (_channelChangeLocked) {
+      debugPrint('📺 Cooldown active, ignoring switch to $index');
+      return;
+    }
+
     final channel = _channelList[index];
     if (channel.streamUrl == null) return;
 
+    // Set cooldown lock
+    _channelChangeLocked = true;
+    Future.delayed(const Duration(milliseconds: 500), () {
+      _channelChangeLocked = false;
+      debugPrint('📺 Cooldown ended');
+    });
+
+    debugPrint('📺 Switching to channel: ${channel.name} (${index})');
+
     _isSwitching = true;
-    _currentIndex = index;
     _currentUrl = channel.streamUrl;
     containsError = false;
     errorMessage = null;
@@ -119,10 +158,25 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
     _retryDebounce?.cancel();
     _loadTimeoutTimer?.cancel();
 
+    // Increment load token to invalidate stale loads
+    final currentToken = ++_loadToken;
+
+    // Save reference to old controller BEFORE setting to null
+    final oldController = _controller;
+
+    // Set to null FIRST so events are ignored
+    _controller = null;
+
+    // Then dispose the old controller
+    if (oldController != null) {
+      await _silentDispose(oldController);
+    }
+
     _isSwitching = false;
+
     if (_isDisposed) return;
 
-    await _initializePlayer(channel.streamUrl!);
+    await _initializePlayerWithToken(channel.streamUrl!, currentToken);
   }
 
   // ── PiP ───────────────────────────────────────────────────────────────────
@@ -147,7 +201,9 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
     } else if (state == AppLifecycleState.resumed) {
       _pipTriggerTimer?.cancel();
       _isInPip = false;
-      _controller!.play();
+      if (_controller != null && !_isDisposed) {
+        _controller!.play();
+      }
       notifyListeners();
     } else if (state == AppLifecycleState.paused) {
       _pipTriggerTimer?.cancel();
@@ -155,7 +211,7 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
   }
 
   Future<void> enablePip() async {
-    if (_controller == null || _betterPlayerKey == null) return;
+    if (_controller == null || _betterPlayerKey == null || _isDisposed) return;
     try {
       await _pipChannel.invokeMethod('enterPip');
     } catch (e) {
@@ -163,16 +219,15 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
     }
   }
 
-  // ── Player init ───────────────────────────────────────────────────────────
+  // ── Player init with TOKEN protection ──────────────────────────────────────
 
-  Future<void> _initializePlayer(String url) async {
-    if (_isDisposed) return;
+  Future<void> _initializePlayerWithToken(String url, int token) async {
+    if (_isDisposed || token != _loadToken) return;
 
-    // Start a 45s timeout — if the stream never becomes playable
-    // (no 'play'/'progress' event), show an error.
     _loadTimeoutTimer?.cancel();
     _loadTimeoutTimer = Timer(const Duration(seconds: 45), () {
       if (_isDisposed || _isRetrying || _isPlayerReady) return;
+      if (token != _loadToken) return;
       _bufferingTimer?.cancel();
       _handleError('Unable to stream this channel.');
     });
@@ -232,8 +287,9 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
       controller.addEventsListener(_onPlayerEvent);
       await controller.setupDataSource(dataSource);
 
-      if (_isDisposed) {
-        _silentDispose(controller);
+      // Check if this load is still valid
+      if (_isDisposed || token != _loadToken) {
+        await _silentDispose(controller);
         return;
       }
 
@@ -241,9 +297,15 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
       _isPlayerReady = true;
       containsError = false;
       errorMessage = null;
-      await _pipChannel.invokeMethod('setPipEnabled', true);
+      try {
+        await _pipChannel.invokeMethod('setPipEnabled', true);
+      } catch (_) {}
       notifyListeners();
+
+      debugPrint('✅ Player ready for token $token');
     } catch (e) {
+      if (token != _loadToken) return;
+
       if (!_isDisposed) {
         String userMessage = 'Unable to play this stream.';
         if (e.toString().contains('Network')) {
@@ -257,8 +319,17 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
     }
   }
 
+  Future<void> _initializePlayer(String url) async {
+    final token = ++_loadToken;
+    await _initializePlayerWithToken(url, token);
+  }
+
   void _onPlayerEvent(BetterPlayerEvent event) {
-    if (_isDisposed) return;
+    // CRITICAL: Ignore ALL events if:
+    // 1. ViewModel is disposed
+    // 2. No controller exists (already disposed or not set)
+    // 3. The event's controller doesn't match current controller
+    if (_isDisposed || _controller == null) return;
 
     if (event.betterPlayerEventType == BetterPlayerEventType.play ||
         event.betterPlayerEventType == BetterPlayerEventType.progress) {
@@ -266,7 +337,9 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
       if (containsError) {
         containsError = false;
         errorMessage = null;
-        notifyListeners();
+        if (_controller != null && !_isDisposed) {
+          notifyListeners();
+        }
       }
       _bufferingTimer?.cancel();
       return;
@@ -276,7 +349,7 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
       case BetterPlayerEventType.bufferingStart:
         _bufferingTimer?.cancel();
         _bufferingTimer = Timer(const Duration(seconds: 10), () {
-          if (_isDisposed || _isRetrying) return;
+          if (_isDisposed || _isRetrying || _controller == null) return;
           _scheduleRetry();
         });
         break;
@@ -286,18 +359,23 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
         break;
       case BetterPlayerEventType.exception:
         _bufferingTimer?.cancel();
-        if (!_isRetrying)
+        if (!_isRetrying && _controller != null) {
           _handleError('Stream playback failed. Please try again.');
+        }
         break;
       case BetterPlayerEventType.finished:
         _bufferingTimer?.cancel();
-        _handleError('Stream ended.');
+        if (_controller != null) {
+          _handleError('Stream ended.');
+        }
         break;
       case BetterPlayerEventType.initialized:
-        if (containsError) {
+        if (containsError && _controller != null) {
           containsError = false;
           errorMessage = null;
-          notifyListeners();
+          if (!_isDisposed && _controller != null) {
+            notifyListeners();
+          }
         }
         break;
       default:
@@ -306,14 +384,24 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
   }
 
   void _scheduleRetry() {
+    if (_controller == null) return;
+
     _retryDebounce?.cancel();
     _retryDebounce = Timer(const Duration(milliseconds: 300), () {
-      if (!_isDisposed && !_isRetrying && !containsError) retry();
+      if (!_isDisposed && !_isRetrying && !containsError && _controller != null) {
+        retry();
+      }
     });
   }
 
   Future<void> retry() async {
-    if (_isDisposed || _isRetrying || _currentUrl == null) return;
+    if (_isDisposed ||
+        _isRetrying ||
+        _currentUrl == null ||
+        _controller == null) {
+      return;
+    }
+
     _isRetrying = true;
     _bufferingTimer?.cancel();
     _retryDebounce?.cancel();
@@ -345,20 +433,38 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
 
   Future<void> _silentDispose(BetterPlayerController? c) async {
     if (c == null) return;
+
     try {
+      // STEP 1: Remove event listener IMMEDIATELY
+      // This prevents further events from being sent to the callback
       c.removeEventsListener(_onPlayerEvent);
-      c.pause();
-      Future.delayed(const Duration(milliseconds: 300), () {
-        try {
-          c.dispose();
-        } catch (_) {}
-      });
-    } catch (_) {}
+
+      // STEP 2: Small delay to let any pending events process
+      await Future.delayed(const Duration(milliseconds: 50));
+
+      // STEP 3: Pause playback
+      try {
+        await c.pause();
+      } catch (e) {
+        // Ignore pause errors
+      }
+
+      // STEP 4: Wait for hardware
+      await Future.delayed(const Duration(milliseconds: 200));
+
+      // STEP 5: Finally dispose
+      c.dispose();
+
+      debugPrint('✅ Controller disposed cleanly');
+    } catch (e) {
+      debugPrint('Dispose error (safe to ignore): $e');
+    }
   }
 
   Future<void> disposePlayer() async {
     if (_isDisposed) return;
     _isDisposed = true;
+    _channelSwitchDebounce?.cancel();
     await WakelockPlus.disable();
     try {
       await _pipChannel.invokeMethod('setPipEnabled', false);
