@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:mero_tv/app/app.locator.dart';
 import 'package:mero_tv/models/channel_model.dart';
 import 'package:mero_tv/services/channel_player_service.dart';
+import 'package:mero_tv/ui/views/favorites/services/favorites_service.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
@@ -13,6 +14,7 @@ import 'package:wakelock_plus/wakelock_plus.dart';
 class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
   final _navigationService = locator<NavigationService>();
   final _channelPlayerService = locator<ChannelPlayerService>();
+  final _favoritesService = locator<FavoritesService>();
   static const _pipChannel = MethodChannel('mero_tv/pip');
 
   BetterPlayerController? _controller;
@@ -31,6 +33,7 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
   Timer? _bufferingTimer;
   Timer? _retryDebounce;
   Timer? _pipTriggerTimer;
+  Timer? _loadTimeoutTimer;
 
   // Local copy from service so we don't mutate the service mid-session
   late List<ChannelModel> _channelList;
@@ -43,6 +46,26 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
 
   String get currentTitle =>
       _channelList.isNotEmpty ? (_channelList[_currentIndex].name ?? '') : '';
+
+  // ── Favorites ─────────────────────────────────────────────────────────────
+
+  ChannelModel? get currentChannel =>
+      _channelList.isNotEmpty ? _channelList[_currentIndex] : null;
+
+  bool get isCurrentFavorite {
+    final channel = currentChannel;
+    if (channel == null) return false;
+    return _favoritesService.isFavorite(channel);
+  }
+
+  Future<void> toggleCurrentFavorite() async {
+    final channel = currentChannel;
+    if (channel == null) return;
+    await _favoritesService.toggleFavorite(channel);
+    notifyListeners();
+  }
+
+  // ── Init ──────────────────────────────────────────────────────────────────
 
   Future<void> init(String url) async {
     _currentUrl = url;
@@ -94,11 +117,7 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
 
     _bufferingTimer?.cancel();
     _retryDebounce?.cancel();
-
-    final oldController = _controller;
-    _controller = null;
-    await _silentDispose(oldController);
-    await Future.delayed(const Duration(milliseconds: 300));
+    _loadTimeoutTimer?.cancel();
 
     _isSwitching = false;
     if (_isDisposed) return;
@@ -148,6 +167,15 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
 
   Future<void> _initializePlayer(String url) async {
     if (_isDisposed) return;
+
+    // Start a 45s timeout — if the stream never becomes playable
+    // (no 'play'/'progress' event), show an error.
+    _loadTimeoutTimer?.cancel();
+    _loadTimeoutTimer = Timer(const Duration(seconds: 45), () {
+      if (_isDisposed || _isRetrying || _isPlayerReady) return;
+      _bufferingTimer?.cancel();
+      _handleError('Unable to stream this channel.');
+    });
 
     try {
       final dataSource = BetterPlayerDataSource(
@@ -234,6 +262,7 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
 
     if (event.betterPlayerEventType == BetterPlayerEventType.play ||
         event.betterPlayerEventType == BetterPlayerEventType.progress) {
+      _loadTimeoutTimer?.cancel();
       if (containsError) {
         containsError = false;
         errorMessage = null;
@@ -257,9 +286,8 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
         break;
       case BetterPlayerEventType.exception:
         _bufferingTimer?.cancel();
-        if (!_isRetrying) {
+        if (!_isRetrying)
           _handleError('Stream playback failed. Please try again.');
-        }
         break;
       case BetterPlayerEventType.finished:
         _bufferingTimer?.cancel();
@@ -289,6 +317,7 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
     _isRetrying = true;
     _bufferingTimer?.cancel();
     _retryDebounce?.cancel();
+    _loadTimeoutTimer?.cancel();
     containsError = false;
     errorMessage = null;
     notifyListeners();
@@ -307,6 +336,7 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
   void _handleError(String message) {
     if (_isDisposed || _isRetrying) return;
     _bufferingTimer?.cancel();
+    _loadTimeoutTimer?.cancel();
     containsError = true;
     errorMessage = message;
     _isPlayerReady = false;
@@ -338,6 +368,7 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
     _pipChannel.setMethodCallHandler(null);
     _bufferingTimer?.cancel();
     _retryDebounce?.cancel();
+    _loadTimeoutTimer?.cancel();
     final c = _controller;
     _controller = null;
     _isPlayerReady = false;
