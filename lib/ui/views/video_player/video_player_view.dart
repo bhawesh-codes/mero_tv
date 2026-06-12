@@ -32,6 +32,7 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
       },
       disposeViewModel: true,
       builder: (context, viewModel, child) {
+        // PiP Mode - Show minimal UI
         if (viewModel.isInPip) {
           return Scaffold(
             backgroundColor: Colors.black,
@@ -42,18 +43,20 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
                       controller: viewModel.controller!,
                     ),
                   )
-                : const SizedBox.shrink(),
+                : const Center(
+                    child: CircularProgressIndicator(color: kcPrimaryColor),
+                  ),
           );
         }
 
-        return WillPopScope(
-          onWillPop: () async {
-            await viewModel.disposePlayer();
-            return true;
+        // Use PopScope instead of deprecated WillPopScope
+        return PopScope(
+          canPop: true,
+          onPopInvoked: (didPop) async {
+            if (didPop) return;
+            viewModel.disposePlayer();
+            if (context.mounted) Navigator.pop(context);
           },
-          // GestureDetector wraps the ENTIRE screen (AppBar + body)
-          // so swiping anywhere — including over the AppBar —
-          // switches channels.
           child: GestureDetector(
             behavior: HitTestBehavior.translucent,
             onVerticalDragEnd: (details) {
@@ -82,7 +85,7 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
                 leading: IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                   onPressed: () async {
-                    await viewModel.disposePlayer();
+                    viewModel.disposePlayer();
                     if (context.mounted) Navigator.pop(context);
                   },
                 ),
@@ -114,7 +117,6 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
                     ),
                 ],
               ),
-              // No GestureDetector here anymore — moved to the outer wrapper
               body: _buildBody(viewModel),
             ),
           ),
@@ -124,6 +126,7 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
   }
 
   Widget _buildBody(VideoPlayerViewModel viewModel) {
+    // Switching state
     if (viewModel.isSwitching) {
       return const Center(
         child: Column(
@@ -140,6 +143,7 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
       );
     }
 
+    // Error state
     if (viewModel.containsError) {
       return Center(
         child: Padding(
@@ -155,14 +159,33 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 30),
-              ElevatedButton(
-                style:
-                    ElevatedButton.styleFrom(backgroundColor: kcPrimaryColor),
-                onPressed: viewModel.navigateBack,
-                child: const Text(
-                  'Go Back',
-                  style: TextStyle(color: kcPrimaryTextColor),
-                ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: kcPrimaryColor,
+                    ),
+                    onPressed: () {
+                      viewModel.retry();
+                    },
+                    child: const Text(
+                      'Retry',
+                      style: TextStyle(color: kcPrimaryTextColor),
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.grey,
+                    ),
+                    onPressed: viewModel.navigateBack,
+                    child: const Text(
+                      'Go Back',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -170,6 +193,7 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
       );
     }
 
+    // Player ready
     if (viewModel.isPlayerReady && viewModel.controller != null) {
       return SizedBox.expand(
         child: BetterPlayer(
@@ -179,6 +203,7 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
       );
     }
 
+    // Loading state
     return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
