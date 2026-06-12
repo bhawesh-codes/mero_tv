@@ -1,14 +1,18 @@
+// lib/ui/views/video_player/video_player_viewmodel.dart
 import 'dart:async';
 import 'package:better_player_enhanced/better_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:mero_tv/app/app.locator.dart';
+import 'package:mero_tv/models/channel_model.dart';
+import 'package:mero_tv/services/channel_player_service.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
 import 'package:wakelock_plus/wakelock_plus.dart';
 
 class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
   final _navigationService = locator<NavigationService>();
+  final _channelPlayerService = locator<ChannelPlayerService>();
   static const _pipChannel = MethodChannel('mero_tv/pip');
 
   BetterPlayerController? _controller;
@@ -22,17 +26,30 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
   bool _isPlayerReady = false;
   bool _isRetrying = false;
   bool _isInPip = false;
+  bool _isSwitching = false;
   String? _currentUrl;
   Timer? _bufferingTimer;
   Timer? _retryDebounce;
   Timer? _pipTriggerTimer;
 
+  // Local copy from service so we don't mutate the service mid-session
+  late List<ChannelModel> _channelList;
+  late int _currentIndex;
+
   bool get isPlayerReady =>
       _isPlayerReady && _controller != null && !containsError;
   bool get isInPip => _isInPip;
+  bool get isSwitching => _isSwitching;
+
+  String get currentTitle =>
+      _channelList.isNotEmpty ? (_channelList[_currentIndex].name ?? '') : '';
 
   Future<void> init(String url) async {
     _currentUrl = url;
+    // Pull channel list from shared service
+    _channelList = List.from(_channelPlayerService.channelList);
+    _currentIndex = _channelPlayerService.currentIndex;
+
     await WakelockPlus.enable();
     WidgetsBinding.instance.addObserver(this);
     _pipChannel.setMethodCallHandler(_handleNativeMethod);
@@ -46,54 +63,88 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
     _betterPlayerKey = key;
   }
 
+  // ── Channel switching ──────────────────────────────────────────────────────
+
+  Future<void> switchToNext() async {
+    if (_channelList.isEmpty || _isSwitching) return;
+    final nextIndex = _currentIndex + 1;
+    if (nextIndex >= _channelList.length) return;
+    await _switchToIndex(nextIndex);
+  }
+
+  Future<void> switchToPrevious() async {
+    if (_channelList.isEmpty || _isSwitching) return;
+    final prevIndex = _currentIndex - 1;
+    if (prevIndex < 0) return;
+    await _switchToIndex(prevIndex);
+  }
+
+  Future<void> _switchToIndex(int index) async {
+    if (_isDisposed || _isSwitching) return;
+    final channel = _channelList[index];
+    if (channel.streamUrl == null) return;
+
+    _isSwitching = true;
+    _currentIndex = index;
+    _currentUrl = channel.streamUrl;
+    containsError = false;
+    errorMessage = null;
+    _isPlayerReady = false;
+    notifyListeners();
+
+    _bufferingTimer?.cancel();
+    _retryDebounce?.cancel();
+
+    final oldController = _controller;
+    _controller = null;
+    await _silentDispose(oldController);
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    _isSwitching = false;
+    if (_isDisposed) return;
+
+    await _initializePlayer(channel.streamUrl!);
+  }
+
+  // ── PiP ───────────────────────────────────────────────────────────────────
+
   Future<dynamic> _handleNativeMethod(MethodCall call) async {
     if (call.method == 'onPipChanged') {
       final bool isInPip = call.arguments['isInPip'] as bool;
       _isInPip = isInPip;
       notifyListeners();
-      debugPrint('📱 PiP state changed: isInPip=$isInPip');
     }
   }
 
-  // ── Lifecycle ──────────────────────────────────────────────────────────────
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (_controller == null || _isDisposed) return;
 
     if (state == AppLifecycleState.inactive) {
-      // Wait 600ms — notification drawer resumes before timer fires,
-      // home button press stays inactive long enough to trigger PiP
       _pipTriggerTimer?.cancel();
       _pipTriggerTimer = Timer(const Duration(milliseconds: 600), () {
-        if (!_isDisposed && !_isInPip) {
-          enablePip();
-        }
+        if (!_isDisposed && !_isInPip) enablePip();
       });
     } else if (state == AppLifecycleState.resumed) {
-      // Cancel PiP trigger — user just pulled notification drawer
       _pipTriggerTimer?.cancel();
       _isInPip = false;
       _controller!.play();
       notifyListeners();
     } else if (state == AppLifecycleState.paused) {
-      // App fully backgrounded without PiP
       _pipTriggerTimer?.cancel();
     }
   }
 
-  // ── Manual PiP trigger ─────────────────────────────────────────────────────
   Future<void> enablePip() async {
-    if (_controller == null || _betterPlayerKey == null) {
-      debugPrint('⚠️ PiP: controller or key is null');
-      return;
-    }
+    if (_controller == null || _betterPlayerKey == null) return;
     try {
-      debugPrint('📺 Enabling native PiP');
       await _pipChannel.invokeMethod('enterPip');
     } catch (e) {
       debugPrint('⚠️ Native PiP failed: $e');
     }
   }
+
+  // ── Player init ───────────────────────────────────────────────────────────
 
   Future<void> _initializePlayer(String url) async {
     if (_isDisposed) return;
@@ -162,22 +213,12 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
       _isPlayerReady = true;
       containsError = false;
       errorMessage = null;
-      // Enable auto PiP on home press now that stream is playing
       await _pipChannel.invokeMethod('setPipEnabled', true);
       notifyListeners();
-
-      debugPrint('✅ Player initialized successfully for: $url');
-    } catch (e, stackTrace) {
-      debugPrint('❌ Player init error: $e');
-      debugPrint('Stack trace: $stackTrace');
-
+    } catch (e) {
       if (!_isDisposed) {
         String userMessage = 'Unable to play this stream.';
-        if (e
-            .toString()
-            .contains('minBufferMs cannot be less than bufferForPlaybackMs')) {
-          userMessage = 'Player configuration error. Please update the app.';
-        } else if (e.toString().contains('Network')) {
+        if (e.toString().contains('Network')) {
           userMessage = 'Network error. Check your internet connection.';
         } else if (e.toString().contains('404') ||
             e.toString().contains('not found')) {
@@ -190,8 +231,6 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
 
   void _onPlayerEvent(BetterPlayerEvent event) {
     if (_isDisposed) return;
-
-    debugPrint('📺 Player event: ${event.betterPlayerEventType}');
 
     if (event.betterPlayerEventType == BetterPlayerEventType.play ||
         event.betterPlayerEventType == BetterPlayerEventType.progress) {
@@ -206,54 +245,34 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
 
     switch (event.betterPlayerEventType) {
       case BetterPlayerEventType.bufferingStart:
-        debugPrint('⏳ Buffering started');
         _bufferingTimer?.cancel();
         _bufferingTimer = Timer(const Duration(seconds: 10), () {
           if (_isDisposed || _isRetrying) return;
-          debugPrint('⚠️ Buffering timeout — retrying');
           _scheduleRetry();
         });
         break;
-
       case BetterPlayerEventType.bufferingEnd:
-        debugPrint('✅ Buffering ended');
         _bufferingTimer?.cancel();
         _retryDebounce?.cancel();
         break;
-
       case BetterPlayerEventType.exception:
-        debugPrint('❌ Exception event received');
         _bufferingTimer?.cancel();
         if (!_isRetrying) {
           _handleError('Stream playback failed. Please try again.');
         }
         break;
-
       case BetterPlayerEventType.finished:
-        debugPrint('🏁 Stream finished');
         _bufferingTimer?.cancel();
         _handleError('Stream ended.');
         break;
-
       case BetterPlayerEventType.initialized:
-        debugPrint('🎯 Player initialized');
         if (containsError) {
           containsError = false;
           errorMessage = null;
           notifyListeners();
         }
         break;
-
-      case BetterPlayerEventType.pause:
-        debugPrint('⏸️ Player paused');
-        break;
-
-      case BetterPlayerEventType.setupDataSource:
-        debugPrint('🔧 Setting up data source');
-        break;
-
       default:
-        debugPrint('📌 Unhandled event: ${event.betterPlayerEventType}');
         break;
     }
   }
@@ -261,21 +280,15 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
   void _scheduleRetry() {
     _retryDebounce?.cancel();
     _retryDebounce = Timer(const Duration(milliseconds: 300), () {
-      if (!_isDisposed && !_isRetrying && !containsError) {
-        retry();
-      }
+      if (!_isDisposed && !_isRetrying && !containsError) retry();
     });
   }
 
   Future<void> retry() async {
     if (_isDisposed || _isRetrying || _currentUrl == null) return;
     _isRetrying = true;
-
-    debugPrint('🔄 Retrying stream: $_currentUrl');
-
     _bufferingTimer?.cancel();
     _retryDebounce?.cancel();
-
     containsError = false;
     errorMessage = null;
     notifyListeners();
@@ -283,19 +296,16 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
     final oldController = _controller;
     _controller = null;
     _isPlayerReady = false;
-
     await _silentDispose(oldController);
     await Future.delayed(const Duration(milliseconds: 500));
 
     _isRetrying = false;
     if (_isDisposed) return;
-
     await _initializePlayer(_currentUrl!);
   }
 
   void _handleError(String message) {
     if (_isDisposed || _isRetrying) return;
-    debugPrint('❌ Player error: $message');
     _bufferingTimer?.cancel();
     containsError = true;
     errorMessage = message;
@@ -320,7 +330,6 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
     if (_isDisposed) return;
     _isDisposed = true;
     await WakelockPlus.disable();
-    // Disable auto PiP so home button works normally after leaving player
     try {
       await _pipChannel.invokeMethod('setPipEnabled', false);
     } catch (_) {}
