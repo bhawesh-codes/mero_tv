@@ -32,7 +32,6 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
   String? _currentUrl;
   Timer? _bufferingTimer;
   Timer? _retryDebounce;
-  Timer? _pipTriggerTimer;
   Timer? _loadTimeoutTimer;
   Timer? _channelSwitchDebounce;
 
@@ -185,30 +184,38 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
     if (call.method == 'onPipChanged') {
       final bool isInPip = call.arguments['isInPip'] as bool;
       _isInPip = isInPip;
+      // If exiting PiP, ensure playback resumes
+      if (!isInPip && _controller != null && !_isDisposed) {
+        try {
+          _controller!.play();
+        } catch (_) {}
+      }
       notifyListeners();
     }
+    return null;
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (_controller == null || _isDisposed) return;
 
-    if (state == AppLifecycleState.inactive) {
-      _pipTriggerTimer?.cancel();
-      _pipTriggerTimer = Timer(const Duration(milliseconds: 600), () {
-        if (!_isDisposed && !_isInPip) enablePip();
-      });
-    } else if (state == AppLifecycleState.resumed) {
-      _pipTriggerTimer?.cancel();
+    // IMPORTANT: PiP is now handled by native onUserLeaveHint in MainActivity.kt
+    // So we DON'T trigger PiP here anymore.
+    // Only handle play/resume when app comes back to foreground.
+
+    if (state == AppLifecycleState.resumed) {
+      // App came back to foreground (either from PiP or from background)
       _isInPip = false;
-      if (_controller != null && !_isDisposed) {
-        _controller!.play();
+      if (_controller != null && !_isDisposed && _isPlayerReady) {
+        try {
+          _controller!.play();
+        } catch (_) {}
       }
       notifyListeners();
-    } else if (state == AppLifecycleState.paused) {
-      _pipTriggerTimer?.cancel();
     }
+    // Do NOT trigger PiP on inactive or paused states - let native handle it
   }
+  // Add this method to your ViewModel class (VideoPlayerViewModel)
 
   Future<void> enablePip() async {
     if (_controller == null || _betterPlayerKey == null || _isDisposed) return;
@@ -328,7 +335,6 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
     // CRITICAL: Ignore ALL events if:
     // 1. ViewModel is disposed
     // 2. No controller exists (already disposed or not set)
-    // 3. The event's controller doesn't match current controller
     if (_isDisposed || _controller == null) return;
 
     if (event.betterPlayerEventType == BetterPlayerEventType.play ||
@@ -388,7 +394,10 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
 
     _retryDebounce?.cancel();
     _retryDebounce = Timer(const Duration(milliseconds: 300), () {
-      if (!_isDisposed && !_isRetrying && !containsError && _controller != null) {
+      if (!_isDisposed &&
+          !_isRetrying &&
+          !containsError &&
+          _controller != null) {
         retry();
       }
     });
@@ -436,7 +445,6 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
 
     try {
       // STEP 1: Remove event listener IMMEDIATELY
-      // This prevents further events from being sent to the callback
       c.removeEventsListener(_onPlayerEvent);
 
       // STEP 2: Small delay to let any pending events process
@@ -469,7 +477,6 @@ class VideoPlayerViewModel extends BaseViewModel with WidgetsBindingObserver {
     try {
       await _pipChannel.invokeMethod('setPipEnabled', false);
     } catch (_) {}
-    _pipTriggerTimer?.cancel();
     WidgetsBinding.instance.removeObserver(this);
     _pipChannel.setMethodCallHandler(null);
     _bufferingTimer?.cancel();
