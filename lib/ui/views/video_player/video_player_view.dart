@@ -51,50 +51,71 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
             await viewModel.disposePlayer();
             return true;
           },
-          child: Scaffold(
-            backgroundColor: Colors.black,
-            appBar: AppBar(
+          // GestureDetector wraps the ENTIRE screen (AppBar + body)
+          // so swiping anywhere — including over the AppBar —
+          // switches channels.
+          child: GestureDetector(
+            behavior: HitTestBehavior.translucent,
+            onVerticalDragEnd: (details) {
+              if (details.primaryVelocity == null) return;
+              if (details.primaryVelocity! < -300) {
+                viewModel.switchToNext();
+              } else if (details.primaryVelocity! > 300) {
+                viewModel.switchToPrevious();
+              }
+            },
+            child: Scaffold(
               backgroundColor: Colors.black,
-              elevation: 0,
-              title: Text(
-                viewModel.currentTitle.isNotEmpty
-                    ? viewModel.currentTitle
-                    : widget.title,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-              leading: IconButton(
-                icon: const Icon(Icons.arrow_back, color: Colors.white),
-                onPressed: () async {
-                  await viewModel.disposePlayer();
-                  if (context.mounted) Navigator.pop(context);
-                },
-              ),
-              actions: [
-                if (viewModel.isPlayerReady)
-                  IconButton(
-                    icon: const Icon(
-                      Icons.picture_in_picture_alt,
-                      color: Colors.white,
-                    ),
-                    tooltip: 'Picture in Picture',
-                    onPressed: viewModel.enablePip,
+              appBar: AppBar(
+                backgroundColor: Colors.black,
+                elevation: 0,
+                title: Text(
+                  viewModel.currentTitle.isNotEmpty
+                      ? viewModel.currentTitle
+                      : widget.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
                   ),
-              ],
-            ),
-            body: GestureDetector(
-              onVerticalDragEnd: (details) {
-                if (details.primaryVelocity == null) return;
-                if (details.primaryVelocity! < -300) {
-                  viewModel.switchToNext();
-                } else if (details.primaryVelocity! > 300) {
-                  viewModel.switchToPrevious();
-                }
-              },
-              child: _buildBody(viewModel),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                leading: IconButton(
+                  icon: const Icon(Icons.arrow_back, color: Colors.white),
+                  onPressed: () async {
+                    await viewModel.disposePlayer();
+                    if (context.mounted) Navigator.pop(context);
+                  },
+                ),
+                actions: [
+                  // Favorite toggle for the currently playing channel
+                  if (viewModel.currentChannel != null)
+                    IconButton(
+                      icon: Icon(
+                        viewModel.isCurrentFavorite
+                            ? Icons.favorite
+                            : Icons.favorite_border,
+                        color: viewModel.isCurrentFavorite
+                            ? kcPrimaryColor
+                            : Colors.white,
+                      ),
+                      tooltip: viewModel.isCurrentFavorite
+                          ? 'Remove from favorites'
+                          : 'Add to favorites',
+                      onPressed: viewModel.toggleCurrentFavorite,
+                    ),
+                  if (viewModel.isPlayerReady)
+                    IconButton(
+                      icon: const Icon(
+                        Icons.picture_in_picture_alt,
+                        color: Colors.white,
+                      ),
+                      tooltip: 'Picture in Picture',
+                      onPressed: viewModel.enablePip,
+                    ),
+                ],
+              ),
+              // No GestureDetector here anymore — moved to the outer wrapper
+              body: _buildBody(viewModel),
             ),
           ),
         );
@@ -109,11 +130,11 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CircularProgressIndicator(color: kcPrimaryColor),
-            // SizedBox(height: 20),
-            // Text(
-            //   'Switching channel...',
-            //   style: TextStyle(color: Colors.white70),
-            // ),
+            SizedBox(height: 20),
+            Text(
+              'Switching channel...',
+              style: TextStyle(color: Colors.white70),
+            ),
           ],
         ),
       );
