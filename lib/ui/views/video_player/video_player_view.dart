@@ -1,3 +1,4 @@
+// lib/ui/views/video_player/video_player_view.dart
 import 'package:better_player_enhanced/better_player.dart';
 import 'package:flutter/material.dart';
 import 'package:mero_tv/ui/common/app_colors.dart';
@@ -31,7 +32,6 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
       },
       disposeViewModel: true,
       builder: (context, viewModel, child) {
-        // When in PiP — show only the video, no AppBar, no UI chrome
         if (viewModel.isInPip) {
           return Scaffold(
             backgroundColor: Colors.black,
@@ -57,7 +57,9 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
               backgroundColor: Colors.black,
               elevation: 0,
               title: Text(
-                widget.title,
+                viewModel.currentTitle.isNotEmpty
+                    ? viewModel.currentTitle
+                    : widget.title,
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -83,7 +85,17 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
                   ),
               ],
             ),
-            body: _buildBody(viewModel),
+            body: GestureDetector(
+              onVerticalDragEnd: (details) {
+                if (details.primaryVelocity == null) return;
+                if (details.primaryVelocity! < -300) {
+                  viewModel.switchToNext();
+                } else if (details.primaryVelocity! > 300) {
+                  viewModel.switchToPrevious();
+                }
+              },
+              child: _buildBody(viewModel),
+            ),
           ),
         );
       },
@@ -91,6 +103,22 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
   }
 
   Widget _buildBody(VideoPlayerViewModel viewModel) {
+    if (viewModel.isSwitching) {
+      return const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(color: kcPrimaryColor),
+            // SizedBox(height: 20),
+            // Text(
+            //   'Switching channel...',
+            //   style: TextStyle(color: Colors.white70),
+            // ),
+          ],
+        ),
+      );
+    }
+
     if (viewModel.containsError) {
       return Center(
         child: Padding(
@@ -130,15 +158,16 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
       );
     }
 
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(color: kcPrimaryColor),
-          SizedBox(height: 20),
-          Text('Loading stream...', style: TextStyle(color: Colors.white70)),
-        ],
-      ),
+    return const Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        CircularProgressIndicator(color: kcPrimaryColor),
+        SizedBox(height: 20),
+        Text(
+          'Loading stream...',
+          style: TextStyle(color: Colors.white70),
+        ),
+      ],
     );
   }
 }
