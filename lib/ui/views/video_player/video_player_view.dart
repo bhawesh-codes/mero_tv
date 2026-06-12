@@ -158,16 +158,18 @@ class _VideoPlayerViewState extends State<VideoPlayerView> {
       );
     }
 
-    return const Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        CircularProgressIndicator(color: kcPrimaryColor),
-        SizedBox(height: 20),
-        Text(
-          'Loading stream...',
-          style: TextStyle(color: Colors.white70),
-        ),
-      ],
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(color: kcPrimaryColor),
+          SizedBox(height: 20),
+          Text(
+            'Loading stream...',
+            style: TextStyle(color: Colors.white70),
+          ),
+        ],
+      ),
     );
   }
 }
