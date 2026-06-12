@@ -217,8 +217,12 @@ class HomeViewModel extends BaseViewModel {
       },
     );
 
+    // Only the stream is essential — a channel is unplayable without it.
+    // Logo is purely cosmetic (ChannelCard already shows a placeholder
+    // icon when logoUrl is null), so don't drop channels just because
+    // they lack a logo entry.
     _matchedChannels = channels
-        .where((c) => logoMap.containsKey(c.id) && streamMap.containsKey(c.id))
+        .where((c) => streamMap.containsKey(c.id))
         .map((c) => c.copyWith(
               logoUrl: logoMap[c.id],
               streamUrl: streamMap[c.id],
