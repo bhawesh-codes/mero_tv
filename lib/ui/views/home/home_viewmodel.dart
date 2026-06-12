@@ -10,6 +10,7 @@ import 'package:mero_tv/models/logo_model.dart';
 import 'package:mero_tv/models/stream_model.dart';
 import 'package:mero_tv/repository/channel_repository.dart';
 import 'package:mero_tv/repository/geo_repository.dart';
+import 'package:mero_tv/services/channel_player_service.dart';
 import 'package:mero_tv/ui/views/favorites/services/favorites_service.dart';
 import 'package:stacked/stacked.dart';
 import 'package:stacked_services/stacked_services.dart';
@@ -19,6 +20,8 @@ class HomeViewModel extends BaseViewModel {
   final GeoRepository _geoRepository = locator<GeoRepository>();
   final _navigationService = locator<NavigationService>();
   final FavoritesService _favoritesService = locator<FavoritesService>();
+  final ChannelPlayerService _channelPlayerService =
+      locator<ChannelPlayerService>();
   final TextEditingController searchController = TextEditingController();
 
   HomeViewModel();
@@ -254,6 +257,12 @@ class HomeViewModel extends BaseViewModel {
 
   void navigateToPlayer(ChannelModel channel) {
     if (channel.streamUrl == null) return;
+
+    // Pass the currently filtered list + index via shared service
+    final list = channelList;
+    final index = list.indexWhere((c) => c.id == channel.id);
+    _channelPlayerService.setChannels(list, index < 0 ? 0 : index);
+
     _navigationService.navigateToVideoPlayerView(
       streamUrl: channel.streamUrl!,
       title: channel.name ?? '',
